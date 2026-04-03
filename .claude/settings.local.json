@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(git remote:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:github.com)",
+      "mcp__github__get_file_contents",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)"
     ]
   }
 }
