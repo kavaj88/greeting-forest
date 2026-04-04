@@ -49,7 +49,7 @@ export function WishCard({ wish, onLike }: WishCardProps) {
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ duration: 0.3 }}
       className={twMerge(
-        'relative flex flex-col overflow-hidden rounded-xl border border-stone-200/60 p-3.5 shadow-sm transition-shadow hover:shadow-md aspect-[4/3] sm:aspect-[5/4]',
+        'relative flex flex-col overflow-hidden rounded-xl border border-stone-200/60 p-2 pl-[15px] shadow-sm transition-shadow hover:shadow-md aspect-[4/3] sm:aspect-[5/4]',
         bgClass
       )}
     >

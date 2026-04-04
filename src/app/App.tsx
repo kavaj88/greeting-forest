@@ -180,7 +180,7 @@ export default function App() {
       {/* Main Content */}
       <main className="mx-auto w-full px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[1400px] pb-24">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
             <AnimatePresence mode="popLayout">
               {filteredWishes.map((wish) => (
                 <WishCard key={wish.id} wish={wish} onLike={handleLike} />
