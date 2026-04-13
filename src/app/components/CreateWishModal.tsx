@@ -14,28 +14,44 @@ interface CreateWishModalProps {
 export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalProps) {
   const [category, setCategory] = useState<Exclude<WishCategory, 'all'>>('blessing');
   const [content, setContent] = useState('');
+  const [reason, setReason] = useState('');
   const [author, setAuthor] = useState('');
+  const [isPublic, setIsPublic] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
+    if (isSubmitting) return;
 
-    onSubmit({
+    const finalContent = reason.trim() ? `${content.trim()}\n\n【发念缘由】${reason.trim()}` : content.trim();
+
+    setIsSubmitting(true);
+    await onSubmit({
       category,
-      content: content.trim(),
-      author: author.trim() || '无名氏',
+      content: finalContent,
+      author: author.trim() || '匿名',
+      isPublic,
     });
+    setIsSubmitting(false);
 
     setContent('');
+    setReason('');
     setAuthor('');
+    setIsPublic(true);
     onClose();
   };
 
-  const categories: { id: Exclude<WishCategory, 'all'>; label: string; icon: React.ReactNode; color: string }[] = [
-    { id: 'blessing', label: '祈福', icon: <Sparkles size={18} />, color: 'bg-red-50 text-red-600 border-red-200 hover:border-red-400' },
-    { id: 'wish', label: '祝愿', icon: <Feather size={18} />, color: 'bg-amber-50 text-amber-600 border-amber-200 hover:border-amber-400' },
-    { id: 'vent', label: '吐槽', icon: <MessageCircleWarning size={18} />, color: 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400' },
+  const categories: { id: Exclude<WishCategory, 'all'>; label: string; icon: React.ReactNode; color: string; placeholder: string }[] = [
+    { id: 'blessing', label: '祈福', icon: <Sparkles size={18} />, color: 'bg-red-50 text-red-600 border-red-200 hover:border-red-400', placeholder: '向神、佛、祖先、上天等超自然力量祷告祈求，希望赐福、消灾、护佑' },
+    { id: 'wish', label: '祝愿', icon: <Feather size={18} />, color: 'bg-amber-50 text-amber-600 border-amber-200 hover:border-amber-400', placeholder: '对他人或事物表达良好的愿望与期盼' },
+    { id: 'vent', label: '吐槽', icon: <MessageCircleWarning size={18} />, color: 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400', placeholder: '把不满、好笑、无语的地方说出来' },
   ];
+
+  const getPlaceholder = () => {
+    const cat = categories.find(c => c.id === category);
+    return cat ? cat.placeholder : '';
+  };
 
   return (
     <AnimatePresence>
@@ -80,15 +96,34 @@ export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalPr
               </div>
 
               <div className="mb-6 space-y-3">
-                <label className="text-sm font-medium text-stone-600">内容</label>
+                <label className="text-sm font-medium text-stone-600">
+                  心声内容 <span className="text-stone-400 font-normal">(最多 50 字)</span>
+                </label>
                 <textarea
                   value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="写下你此刻的想法..."
-                  rows={4}
+                  onChange={(e) => setContent(e.target.value.slice(0, 50))}
+                  placeholder={getPlaceholder()}
+                  rows={3}
+                  maxLength={50}
                   className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 p-4 text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/10 font-serif"
                   required
                 />
+                <div className="text-right text-xs text-stone-400">{content.length}/50</div>
+              </div>
+
+              <div className="mb-6 space-y-3">
+                <label className="text-sm font-medium text-stone-600">
+                  发念缘由 <span className="text-stone-400 font-normal">(选填，最多 800 字)</span>
+                </label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value.slice(0, 800))}
+                  placeholder="分享你写下这个心愿的故事或原因..."
+                  rows={5}
+                  maxLength={800}
+                  className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 p-4 text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/10 font-serif"
+                />
+                <div className="text-right text-xs text-stone-400">{reason.length}/800</div>
               </div>
 
               <div className="mb-8 space-y-3">
@@ -97,9 +132,31 @@ export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalPr
                   type="text"
                   value={author}
                   onChange={(e) => setAuthor(e.target.value)}
-                  placeholder="无名氏"
+                  placeholder="匿名"
                   className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/10 font-serif"
                 />
+              </div>
+
+              <div className="mb-8 flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-medium text-stone-600">是否公开</label>
+                  <p className="text-xs text-stone-400 mt-0.5">不公开将在牌子上显示"保密"</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPublic(!isPublic)}
+                  className={twMerge(
+                    'relative h-6 w-11 rounded-full transition-colors duration-200',
+                    isPublic ? 'bg-amber-500' : 'bg-stone-300'
+                  )}
+                >
+                  <span
+                    className={twMerge(
+                      'absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200',
+                      isPublic ? 'left-6' : 'left-1'
+                    )}
+                  />
+                </button>
               </div>
 
               <div className="flex justify-end gap-3">
@@ -112,10 +169,10 @@ export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalPr
                 </button>
                 <button
                   type="submit"
-                  disabled={!content.trim()}
+                  disabled={!content.trim() || isSubmitting}
                   className="rounded-xl bg-amber-500 px-6 py-2.5 font-medium text-white shadow-lg shadow-amber-500/30 transition-all hover:bg-amber-600 disabled:opacity-50 disabled:shadow-none"
                 >
-                  挂上心愿牌
+                  {isSubmitting ? '提交中...' : '去祈愿'}
                 </button>
               </div>
             </form>

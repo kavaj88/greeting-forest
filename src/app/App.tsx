@@ -6,6 +6,7 @@ import { clsx } from 'clsx';
 import { Wish, WishCategory } from './types';
 import { WishCard } from './components/WishCard';
 import { CreateWishModal } from './components/CreateWishModal';
+import { fetchWishes, createWish as apiCreateWish, likeWish as apiLikeWish } from '../lib/api';
 
 const INITIAL_WISHES: Wish[] = [
   {
@@ -16,6 +17,7 @@ const INITIAL_WISHES: Wish[] = [
     createdAt: Date.now() - 1000 * 60 * 60 * 24,
     likes: 12,
     bgVariant: 2,
+    isPublic: true,
   },
   {
     id: '2',
@@ -25,6 +27,7 @@ const INITIAL_WISHES: Wish[] = [
     createdAt: Date.now() - 1000 * 60 * 60 * 5,
     likes: 45,
     bgVariant: 3,
+    isPublic: true,
   },
   {
     id: '3',
@@ -34,6 +37,7 @@ const INITIAL_WISHES: Wish[] = [
     createdAt: Date.now() - 1000 * 60 * 60 * 12,
     likes: 8,
     bgVariant: 1,
+    isPublic: true,
   },
   {
     id: '4',
@@ -43,6 +47,7 @@ const INITIAL_WISHES: Wish[] = [
     createdAt: Date.now() - 1000 * 60 * 60 * 48,
     likes: 102,
     bgVariant: 0,
+    isPublic: true,
   },
   {
     id: '5',
@@ -52,6 +57,7 @@ const INITIAL_WISHES: Wish[] = [
     createdAt: Date.now() - 1000 * 60 * 30,
     likes: 3,
     bgVariant: 0,
+    isPublic: true,
   },
   {
     id: '6',
@@ -61,6 +67,7 @@ const INITIAL_WISHES: Wish[] = [
     createdAt: Date.now() - 1000 * 60 * 60 * 72,
     likes: 21,
     bgVariant: 1,
+    isPublic: true,
   },
 ];
 
@@ -72,61 +79,84 @@ const TABS: { id: WishCategory; label: string; icon: React.ReactNode }[] = [
 ];
 
 export default function App() {
-  const [wishes, setWishes] = useState<Wish[]>(INITIAL_WISHES);
+  const [wishes, setWishes] = useState<Wish[]>([]);
   const [activeTab, setActiveTab] = useState<WishCategory>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 加载心愿数据
+  useEffect(() => {
+    loadWishes();
+  }, []);
+
+  const loadWishes = async () => {
+    setIsLoading(true);
+    const data = await fetchWishes();
+    setWishes(data);
+    setIsLoading(false);
+  };
 
   const filteredWishes = wishes.filter(
     (wish) => activeTab === 'all' || wish.category === activeTab
   );
 
-  const handleAddWish = (newWish: Omit<Wish, 'id' | 'createdAt' | 'likes' | 'bgVariant'>) => {
-    const wish: Wish = {
-      ...newWish,
-      id: Math.random().toString(36).substring(7),
-      createdAt: Date.now(),
-      likes: 0,
+  const handleAddWish = async (newWish: Omit<Wish, 'id' | 'createdAt' | 'likes' | 'bgVariant'>) => {
+    const wish = await apiCreateWish({
+      category: newWish.category,
+      content: newWish.content,
+      author: newWish.author,
+      isPublic: newWish.isPublic,
       bgVariant: Math.floor(Math.random() * 4),
-    };
-    setWishes([wish, ...wishes]);
+    });
+
+    if (wish) {
+      setWishes((prev) => [wish, ...prev]);
+    }
   };
 
-  const handleLike = (id: string) => {
+  const handleLike = async (id: string) => {
+    await apiLikeWish(id);
     setWishes((prev) =>
       prev.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w))
     );
   };
 
   return (
-    <div className="min-h-screen bg-[#faf9f6] text-stone-800 selection:bg-amber-200">
+    <div className="min-h-screen text-stone-800 selection:bg-amber-200 relative">
+      {/* Background Image */}
+      <div
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/bg.jpg')" }}
+      ></div>
+      <div className="fixed inset-0 z-0 bg-[#faf9f6]/80"></div>
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-stone-200/50 bg-white/80 backdrop-blur-md">
+      <header className="sticky top-0 z-[10] border-b border-stone-200/50 bg-white/60 backdrop-blur-md">
         <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex h-20 items-center justify-between gap-4">
-            <div className="flex items-center gap-3 lg:gap-5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-inner">
-                <Leaf size={24} />
+          <div className="flex h-10 items-center justify-between gap-4">
+            <div className="flex items-center gap-2 lg:gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-white shadow-inner">
+                <Leaf size={16} />
               </div>
-              <div className="flex flex-col md:flex-row md:items-center md:gap-4">
+              <div className="flex flex-col md:flex-row md:items-center md:gap-3">
                 <div>
-                  <h1 className="text-xl font-bold tracking-tight text-stone-800 font-serif whitespace-nowrap">祈愿林</h1>
-                  <p className="text-[10px] uppercase tracking-widest text-stone-400 whitespace-nowrap">Wishing Woods</p>
+                  <h1 className="text-sm font-bold tracking-tight text-stone-800 font-serif whitespace-nowrap">祈愿林</h1>
+                  <p className="text-[9px] uppercase tracking-widest text-stone-400 whitespace-nowrap">Wishing Woods</p>
                 </div>
-                <div className="hidden h-8 w-px bg-stone-200 lg:block"></div>
-                <div className="hidden text-[13px] leading-relaxed text-stone-500 lg:block whitespace-nowrap">
+                <div className="hidden h-5 w-px bg-stone-200 lg:block"></div>
+                <div className="hidden text-[11px] leading-relaxed text-stone-500 lg:block whitespace-nowrap">
                   <span className="font-semibold text-stone-700">倾听每一种心声</span> — 在这里留下祈福与祝愿，或是倾吐生活的不快。每一块心愿牌，都有人在默默倾听。
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 lg:gap-4">
-              <nav className="hidden lg:flex items-center gap-1">
+            <div className="flex items-center gap-1 lg:gap-2">
+              <nav className="hidden lg:flex items-center gap-0.5">
                 {TABS.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={twMerge(
-                      'relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 whitespace-nowrap',
+                      'relative flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-200 whitespace-nowrap',
                       activeTab === tab.id
                         ? 'text-stone-900'
                         : 'text-stone-500 hover:bg-stone-100/80 hover:text-stone-700'
@@ -147,9 +177,9 @@ export default function App() {
 
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 rounded-full bg-amber-500 px-4 py-2 text-sm font-medium text-white shadow-md shadow-amber-500/20 transition-transform hover:scale-105 hover:bg-amber-600 whitespace-nowrap"
+                className="flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-amber-500/20 transition-transform hover:scale-105 hover:bg-amber-600 whitespace-nowrap"
               >
-                <Plus size={16} />
+                <Plus size={14} />
                 <span className="hidden sm:inline">去祈愿</span>
                 <span className="sm:hidden">写心愿</span>
               </button>
@@ -179,14 +209,26 @@ export default function App() {
 
       {/* Main Content */}
       <main className="mx-auto w-full px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-[1400px] pb-24">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
+        <div className="mx-auto pb-24 flex flex-wrap justify-center gap-3 max-w-[1920px]">
+          {isLoading ? (
+            <div className="w-full text-center py-20">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-amber-500 border-t-transparent"></div>
+              <p className="mt-4 text-stone-500">正在加载心愿...</p>
+            </div>
+          ) : filteredWishes.length === 0 ? (
+            <div className="w-full text-center py-20">
+              <Leaf className="mx-auto h-12 w-12 text-stone-300" />
+              <p className="mt-4 text-stone-500">暂无心愿，成为第一个许愿的人吧！</p>
+            </div>
+          ) : (
             <AnimatePresence mode="popLayout">
               {filteredWishes.map((wish) => (
-                <WishCard key={wish.id} wish={wish} onLike={handleLike} />
+                <div key={wish.id} className="w-[200px] sm:w-[220px] md:w-[240px]">
+                  <WishCard wish={wish} onLike={handleLike} />
+                </div>
               ))}
             </AnimatePresence>
-          </div>
+          )}
         </div>
       </main>
 
@@ -201,7 +243,7 @@ export default function App() {
       </div>
 
       {/* Background Decor */}
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 z-[1] overflow-hidden">
         <div className="absolute -left-[10%] -top-[10%] h-[40%] w-[40%] rounded-full bg-amber-200/20 blur-[100px]" />
         <div className="absolute -right-[10%] top-[20%] h-[30%] w-[30%] rounded-full bg-red-200/20 blur-[100px]" />
         <div className="absolute bottom-[10%] left-[20%] h-[30%] w-[30%] rounded-full bg-blue-200/20 blur-[100px]" />

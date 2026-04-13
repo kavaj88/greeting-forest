@@ -8,4 +8,5 @@ export interface Wish {
   createdAt: number;
   likes: number;
   bgVariant: number;
+  isPublic: boolean;
 }

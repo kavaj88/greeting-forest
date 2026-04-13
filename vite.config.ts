@@ -19,4 +19,9 @@ export default defineConfig({
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+
+  // Define 配置用于注入环境变量到客户端
+  define: {
+    'process.env': {}
+  },
 })
