@@ -107,7 +107,7 @@ export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalPr
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value.slice(0, 50))}
-                  placeholder={getPlaceholder()}
+                  placeholder={getPlaceholder}
                   rows={3}
                   maxLength={50}
                   className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 p-4 text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/10 font-serif"
