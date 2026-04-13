@@ -61,12 +61,12 @@ export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalPr
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-2xl my-8 overflow-hidden rounded-2xl bg-white shadow-2xl"
           >
             <div className="flex items-center justify-between border-b border-stone-100 p-5 pb-4">
               <h2 className="text-xl font-semibold text-stone-800 font-serif">写下你的心声</h2>
@@ -78,29 +78,29 @@ export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalPr
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6">
-              <div className="mb-6 space-y-3">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 max-h-[80vh] overflow-y-auto">
+              <div className="mb-4 sm:mb-6 space-y-3">
                 <label className="text-sm font-medium text-stone-600">选择类型</label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {categories.map((c) => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => setCategory(c.id)}
                       className={twMerge(
-                        'flex flex-col items-center justify-center gap-2 rounded-xl border p-4 transition-all duration-200',
+                        'flex flex-col items-center justify-center gap-2 rounded-xl border p-2 sm:p-4 transition-all duration-200',
                         c.color,
                         category === c.id ? 'ring-2 ring-current ring-offset-2' : 'border-dashed border-stone-300 bg-transparent text-stone-500 hover:bg-stone-50'
                       )}
                     >
                       {c.icon}
-                      <span className="font-medium">{c.label}</span>
+                      <span className="font-medium text-xs sm:text-sm">{c.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="mb-6 space-y-3">
+              <div className="mb-4 sm:mb-6 space-y-3">
                 <label className="text-sm font-medium text-stone-600">
                   心声内容 <span className="text-stone-400 font-normal">(最多 50 字)</span>
                 </label>
@@ -110,13 +110,13 @@ export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalPr
                   placeholder={getPlaceholder}
                   rows={3}
                   maxLength={50}
-                  className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 p-4 text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/10 font-serif"
+                  className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 p-3 sm:p-4 text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/10 font-serif text-sm sm:text-base"
                   required
                 />
                 <div className="text-right text-xs text-stone-400">{content.length}/50</div>
               </div>
 
-              <div className="mb-6 space-y-3">
+              <div className="mb-4 sm:mb-6 space-y-3">
                 <label className="text-sm font-medium text-stone-600">
                   发念缘由 <span className="text-stone-400 font-normal">(选填，最多 800 字)</span>
                 </label>
@@ -126,23 +126,23 @@ export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalPr
                   placeholder="分享你写下这个心愿的故事或原因..."
                   rows={5}
                   maxLength={800}
-                  className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 p-4 text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/10 font-serif"
+                  className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 p-3 sm:p-4 text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/10 font-serif text-sm sm:text-base"
                 />
                 <div className="text-right text-xs text-stone-400">{reason.length}/800</div>
               </div>
 
-              <div className="mb-8 space-y-3">
+              <div className="mb-4 sm:mb-8 space-y-3">
                 <label className="text-sm font-medium text-stone-600">署名（选填）</label>
                 <input
                   type="text"
                   value={author}
                   onChange={(e) => setAuthor(e.target.value)}
                   placeholder="匿名"
-                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/10 font-serif"
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 sm:px-4 py-2.5 sm:py-3 text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/10 font-serif text-sm sm:text-base"
                 />
               </div>
 
-              <div className="mb-8 flex items-center justify-between">
+              <div className="mb-4 sm:mb-8 flex items-center justify-between">
                 <div>
                   <label className="text-sm font-medium text-stone-600">是否公开</label>
                   <p className="text-xs text-stone-400 mt-0.5">不公开将在牌子上显示"保密"</p>
@@ -164,18 +164,18 @@ export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalPr
                 </button>
               </div>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-xl px-5 py-2.5 font-medium text-stone-500 hover:bg-stone-100"
+                  className="w-full sm:w-auto rounded-xl px-5 py-2.5 font-medium text-stone-500 hover:bg-stone-100"
                 >
                   取消
                 </button>
                 <button
                   type="submit"
                   disabled={!content.trim() || isSubmitting}
-                  className="rounded-xl bg-amber-500 px-6 py-2.5 font-medium text-white shadow-lg shadow-amber-500/30 transition-all hover:bg-amber-600 disabled:opacity-50 disabled:shadow-none"
+                  className="w-full sm:w-auto rounded-xl bg-amber-500 px-6 py-2.5 font-medium text-white shadow-lg shadow-amber-500/30 transition-all hover:bg-amber-600 disabled:opacity-50 disabled:shadow-none"
                 >
                   {isSubmitting ? '提交中...' : '去祈愿'}
                 </button>
