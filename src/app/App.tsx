@@ -90,7 +90,7 @@ export default function App() {
               <div className="flex flex-col md:flex-row md:items-center md:gap-3">
                 <div>
                   <h1 className="text-sm font-bold tracking-tight text-stone-800 font-serif whitespace-nowrap">如是愿</h1>
-                  <p className="text-[9px] uppercase tracking-widest text-stone-400 whitespace-nowrap">Wishing Woods</p>
+                  <p className="text-[9px] uppercase tracking-widest text-stone-400 whitespace-nowrap">WISHING YOU</p>
                 </div>
                 <div className="hidden h-5 w-px bg-stone-200 lg:block"></div>
                 <div className="hidden text-[11px] leading-relaxed text-stone-500 lg:block whitespace-nowrap">
