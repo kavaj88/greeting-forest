@@ -89,12 +89,12 @@ export default function App() {
               </div>
               <div className="flex flex-col md:flex-row md:items-center md:gap-3">
                 <div>
-                  <h1 className="text-sm font-bold tracking-tight text-stone-800 font-serif whitespace-nowrap">祈愿林</h1>
+                  <h1 className="text-sm font-bold tracking-tight text-stone-800 font-serif whitespace-nowrap">如是愿</h1>
                   <p className="text-[9px] uppercase tracking-widest text-stone-400 whitespace-nowrap">Wishing Woods</p>
                 </div>
                 <div className="hidden h-5 w-px bg-stone-200 lg:block"></div>
                 <div className="hidden text-[11px] leading-relaxed text-stone-500 lg:block whitespace-nowrap">
-                  <span className="font-semibold text-stone-700">倾听每一种心声</span> — 在这里留下祈福与祝愿，或是倾吐生活的不快。每一块心愿牌，都有人在默默倾听。
+                  <span className="font-semibold text-stone-700">如是愿，如是成</span> — 凡所祈愿，如是圆满；以如是心，成世间愿。
                 </div>
               </div>
             </div>

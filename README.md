@@ -1,4 +1,4 @@
-# 祈愿林 (Wishing Woods)
+# 如是愿 (Wishing Woods)
 
 一个基于 React + Vite + Supabase 的祈福祝愿 Web 应用。
 

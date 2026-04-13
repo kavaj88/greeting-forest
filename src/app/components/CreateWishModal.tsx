@@ -69,7 +69,7 @@ export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalPr
             className="w-full max-w-2xl my-8 overflow-hidden rounded-2xl bg-white shadow-2xl"
           >
             <div className="flex items-center justify-between border-b border-stone-100 p-5 pb-4">
-              <h2 className="text-xl font-semibold text-stone-800 font-serif">写下你的心声</h2>
+              <h2 className="text-xl font-semibold text-stone-800 font-serif">如是愿，如是成</h2>
               <button
                 onClick={onClose}
                 className="rounded-full p-2 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
