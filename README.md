@@ -37,11 +37,13 @@ npm install
 
 ### 2. 配置环境变量
 
-`.env` 文件已配置：
+创建 `.env` 文件，填入你的 Supabase 配置：
 ```
-VITE_SUPABASE_URL=https://vjypljnjveblhicncniu.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_Ho_0pQ0nvD1IhwLciqmbUQ__LjlEo3S
+VITE_SUPABASE_URL=你的项目 URL
+VITE_SUPABASE_ANON_KEY=你的 Anon Key
 ```
+
+**注意**：不要将 `.env` 文件提交到 Git！
 
 ### 3. 初始化数据库
 
