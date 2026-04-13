@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Heart, MessageCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { clsx } from 'clsx';
@@ -23,7 +23,7 @@ const bgVariants = [
   'bg-[#f8fafc]/30', // 3 - light slate
 ];
 
-export function WishCard({ wish, onLike }: WishCardProps) {
+export const WishCard = memo(({ wish, onLike }: WishCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
 
   const handleLike = () => {
@@ -104,4 +104,4 @@ export function WishCard({ wish, onLike }: WishCardProps) {
       </div>
     </motion.div>
   );
-}
+});
