@@ -122,18 +122,19 @@ export function AuthModal({ isOpen, mode, onClose, onAuthSuccess }: AuthModalPro
           password_hash: hashedPassword,
           updated_at: new Date().toISOString(),
         }, {
-          onConflict: 'email', // 如果邮箱已存在则更新
+          onConflict: 'email',
         });
 
       if (upsertError) throw upsertError;
 
-      // 第三步：使用 OTP 登录创建 session
-      await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-        },
-      });
+      // 第三步：创建本地 session（不再调用 signInWithOtp，避免重新发送验证码）
+      const loginData = {
+        email: email.toLowerCase(),
+        loggedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      };
+      localStorage.setItem('user_session', JSON.stringify(loginData));
+      window.dispatchEvent(new CustomEvent('auth-change', { detail: loginData }));
 
       setMessage(authMode === 'register' ? '✅ 注册成功！' : '✅ 密码已重置！');
       setTimeout(() => {
@@ -341,7 +342,7 @@ export function AuthModal({ isOpen, mode, onClose, onAuthSuccess }: AuthModalPro
                 <button
                   type="button"
                   onClick={handleRegister}
-                  disabled={isLoading || (codeSent && codeTimer > 0)}
+                  disabled={isLoading || !codeSent}
                   className="w-full rounded-xl bg-amber-500 px-6 py-3 font-medium text-white shadow-lg shadow-amber-500/30 transition-all hover:bg-amber-600 disabled:opacity-50 disabled:shadow-none"
                 >
                   {isLoading ? '处理中...' : (codeSent ? '验证并注册' : '获取验证码注册')}
