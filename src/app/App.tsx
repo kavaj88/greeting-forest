@@ -7,8 +7,12 @@ import { WishCard } from './components/WishCard';
 import { CreateWishModal } from './components/CreateWishModal';
 import { AuthModal } from './components/AuthModal';
 import { fetchWishes, createWish as apiCreateWish, likeWish as apiLikeWish } from '../lib/api';
-import { supabase } from '../lib/supabase';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+
+interface UserSession {
+  email: string;
+  loggedAt: string;
+  expiresAt: string;
+}
 
 const TABS: { id: WishCategory; label: string; icon: React.ReactNode }[] = [
   { id: 'all', label: '全部心愿', icon: <Leaf size={16} /> },
@@ -25,21 +29,34 @@ export default function App() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [userSession, setUserSession] = useState<UserSession | null>(null);
 
   // 检查用户登录状态
   useEffect(() => {
-    // 获取当前 session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
+    // 从 localStorage 获取 session
+    const stored = localStorage.getItem('user_session');
+    if (stored) {
+      try {
+        const session = JSON.parse(stored) as UserSession;
+        // 检查是否过期
+        if (new Date(session.expiresAt) > new Date()) {
+          setUserSession(session);
+        } else {
+          localStorage.removeItem('user_session');
+        }
+      } catch {
+        localStorage.removeItem('user_session');
+      }
+    }
 
-    // 监听 auth 变化
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
+    // 监听自定义 auth 事件
+    const handleAuthChange = (e: Event) => {
+      const customEvent = e as CustomEvent<UserSession>;
+      setUserSession(customEvent.detail);
+    };
 
-    return () => subscription.unsubscribe();
+    window.addEventListener('auth-change' as any, handleAuthChange);
+    return () => window.removeEventListener('auth-change' as any, handleAuthChange);
   }, []);
 
   // 加载心愿数据
@@ -61,26 +78,23 @@ export default function App() {
 
   // 处理点击"去祈愿"
   const handleOpenWishModal = () => {
-    if (!user) {
-      // 未登录，打开登录/注册弹窗
+    if (!userSession) {
       setAuthMode('login');
       setIsAuthModalOpen(true);
     } else {
-      // 已登录，打开写心愿弹窗
       setIsModalOpen(true);
     }
   };
 
   // 退出登录
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+  const handleLogout = () => {
+    localStorage.removeItem('user_session');
+    setUserSession(null);
   };
 
   // 认证成功回调
   const handleAuthSuccess = () => {
     setIsAuthModalOpen(false);
-    // 如果原本是要写心愿，认证成功后打开
     if (authMode === 'login') {
       setIsModalOpen(true);
     }
@@ -148,12 +162,12 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-1 lg:gap-2">
-              {user && (
+              {userSession && (
                 <div className="hidden lg:flex items-center gap-2 mr-2">
                   <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100">
                     <User size={14} className="text-stone-500" />
                     <span className="text-xs text-stone-600 truncate max-w-[150px]">
-                      {user.email?.split('@')[0]}
+                      {userSession.email.split('@')[0]}
                     </span>
                   </div>
                   <button
@@ -270,7 +284,7 @@ export default function App() {
       </div>
 
       {/* 用户信息 (Mobile) */}
-      {user && (
+      {userSession && (
         <div className="fixed bottom-6 left-6 z-40 sm:hidden">
           <button
             onClick={handleLogout}
@@ -292,7 +306,7 @@ export default function App() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleAddWish}
-        user={user}
+        user={userSession}
       />
 
       <AuthModal

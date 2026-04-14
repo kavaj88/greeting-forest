@@ -3,13 +3,18 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Feather, Sparkles, MessageCircleWarning, User } from 'lucide-react';
 import { Wish, WishCategory } from '../types';
 import { twMerge } from 'tailwind-merge';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+
+interface UserSession {
+  email: string;
+  loggedAt: string;
+  expiresAt: string;
+}
 
 interface CreateWishModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (wish: Omit<Wish, 'id' | 'createdAt' | 'likes' | 'bgVariant'>) => Promise<boolean>;
-  user: SupabaseUser | null;
+  user: UserSession | null;
 }
 
 export function CreateWishModal({ isOpen, onClose, onSubmit, user }: CreateWishModalProps) {
@@ -24,7 +29,7 @@ export function CreateWishModal({ isOpen, onClose, onSubmit, user }: CreateWishM
   // 初始化署名为用户邮箱
   useMemo(() => {
     if (user && !author) {
-      const emailPrefix = user.email?.split('@')[0] || '';
+      const emailPrefix = user.email.split('@')[0] || '';
       if (emailPrefix) {
         setAuthor(emailPrefix);
       }
