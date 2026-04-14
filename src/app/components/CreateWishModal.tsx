@@ -1,16 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Feather, Sparkles, MessageCircleWarning } from 'lucide-react';
+import { X, Feather, Sparkles, MessageCircleWarning, User } from 'lucide-react';
 import { Wish, WishCategory } from '../types';
 import { twMerge } from 'tailwind-merge';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface CreateWishModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (wish: Omit<Wish, 'id' | 'createdAt' | 'likes' | 'bgVariant'>) => Promise<boolean>;
+  user: SupabaseUser | null;
 }
 
-export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalProps) {
+export function CreateWishModal({ isOpen, onClose, onSubmit, user }: CreateWishModalProps) {
   const [category, setCategory] = useState<Exclude<WishCategory, 'all'>>('blessing');
   const [content, setContent] = useState('');
   const [reason, setReason] = useState('');
@@ -18,6 +20,16 @@ export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalPr
   const [isPublic, setIsPublic] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // 初始化署名为用户邮箱
+  useMemo(() => {
+    if (user && !author) {
+      const emailPrefix = user.email?.split('@')[0] || '';
+      if (emailPrefix) {
+        setAuthor(emailPrefix);
+      }
+    }
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +81,17 @@ export function CreateWishModal({ isOpen, onClose, onSubmit }: CreateWishModalPr
             className="w-full max-w-2xl my-8 overflow-hidden rounded-2xl bg-white shadow-2xl"
           >
             <div className="flex items-center justify-between border-b border-stone-100 p-5 pb-4">
-              <h2 className="text-xl font-semibold text-stone-800 font-serif">如是愿，如是成</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-semibold text-stone-800 font-serif">如是愿，如是成</h2>
+                {user && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-100">
+                    <User size={12} className="text-stone-500" />
+                    <span className="text-xs text-stone-600">
+                      {user.email?.split('@')[0]}
+                    </span>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={onClose}
                 className="rounded-full p-2 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"

@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Leaf, Plus, Flame, Shield, Sparkles } from 'lucide-react';
+import { Leaf, Plus, Flame, Shield, Sparkles, LogOut, User } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { Wish, WishCategory } from './types';
 import { WishCard } from './components/WishCard';
 import { CreateWishModal } from './components/CreateWishModal';
+import { AuthModal } from './components/AuthModal';
 import { fetchWishes, createWish as apiCreateWish, likeWish as apiLikeWish } from '../lib/api';
+import { supabase } from '../lib/supabase';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 const TABS: { id: WishCategory; label: string; icon: React.ReactNode }[] = [
   { id: 'all', label: '全部心愿', icon: <Leaf size={16} /> },
@@ -18,8 +21,26 @@ export default function App() {
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [activeTab, setActiveTab] = useState<WishCategory>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+
+  // 检查用户登录状态
+  useEffect(() => {
+    // 获取当前 session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // 监听 auth 变化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // 加载心愿数据
   useEffect(() => {
@@ -36,6 +57,33 @@ export default function App() {
       setError(result.error || '加载失败');
     }
     setIsLoading(false);
+  };
+
+  // 处理点击"去祈愿"
+  const handleOpenWishModal = () => {
+    if (!user) {
+      // 未登录，打开登录/注册弹窗
+      setAuthMode('login');
+      setIsAuthModalOpen(true);
+    } else {
+      // 已登录，打开写心愿弹窗
+      setIsModalOpen(true);
+    }
+  };
+
+  // 退出登录
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
+
+  // 认证成功回调
+  const handleAuthSuccess = () => {
+    setIsAuthModalOpen(false);
+    // 如果原本是要写心愿，认证成功后打开
+    if (authMode === 'login') {
+      setIsModalOpen(true);
+    }
   };
 
   const filteredWishes = useMemo(
@@ -100,6 +148,24 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-1 lg:gap-2">
+              {user && (
+                <div className="hidden lg:flex items-center gap-2 mr-2">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100">
+                    <User size={14} className="text-stone-500" />
+                    <span className="text-xs text-stone-600 truncate max-w-[150px]">
+                      {user.email?.split('@')[0]}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-stone-500 hover:bg-stone-100 transition-colors"
+                  >
+                    <LogOut size={14} />
+                    <span>退出</span>
+                  </button>
+                </div>
+              )}
+
               <nav className="hidden lg:flex items-center gap-0.5">
                 {TABS.map((tab) => (
                   <button
@@ -126,7 +192,7 @@ export default function App() {
               </nav>
 
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={handleOpenWishModal}
                 className="flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-amber-500/20 transition-transform hover:scale-105 hover:bg-amber-600 whitespace-nowrap"
               >
                 <Plus size={14} />
@@ -196,12 +262,24 @@ export default function App() {
       {/* Floating Action Button (Mobile) */}
       <div className="fixed bottom-6 right-6 z-40 sm:hidden">
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenWishModal}
           className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500 text-white shadow-xl shadow-amber-500/30 transition-transform active:scale-95"
         >
           <Plus size={24} />
         </button>
       </div>
+
+      {/* 用户信息 (Mobile) */}
+      {user && (
+        <div className="fixed bottom-6 left-6 z-40 sm:hidden">
+          <button
+            onClick={handleLogout}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-200 text-stone-600 shadow-lg"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
+      )}
 
       {/* Background Decor */}
       <div className="pointer-events-none fixed inset-0 z-[1] overflow-hidden">
@@ -214,6 +292,14 @@ export default function App() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleAddWish}
+        user={user}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        mode={authMode}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
       />
     </div>
   );

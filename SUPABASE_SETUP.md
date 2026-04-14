@@ -1,98 +1,59 @@
-# Supabase 数据库设置指南
+# Supabase 配置说明
 
-## 1. 创建 Supabase 项目
+## 启用邮箱 OTP 登录
 
-1. 访问 https://supabase.com
-2. 登录/注册账号
-3. 创建新项目
+1. 登录 [Supabase Dashboard](https://supabase.com/dashboard)
+2. 进入你的项目 → Authentication → Providers
+3. 找到 **Email** 提供商，点击进入
+4. 启用以下选项：
+   - ✅ Enable Email Login
+   - ✅ Enable Email OTP
+   - ❌ Disable Signups (如果需要限制注册)
 
-## 2. 运行数据库迁移脚本
+## 配置邮件发送
 
-### 方法一：SQL Editor（推荐）
+### 开发环境（默认）
+Supabase 默认会发送邮件到真实邮箱，但新用户有发送限制。
 
-1. 在 Supabase 仪表板中，点击左侧 **SQL Editor**
-2. 点击 **New Query**
-3. 复制 `supabase/migrations/001_initial_schema.sql` 的全部内容
-4. 粘贴到 SQL Editor
-5. 点击 **Run** 执行
+### 查看测试邮件
+开发期间，邮件可能会进入 Supabase 的测试队列：
+- 进入 Authentication → Email Templates
+- 查看发送的邮件内容
 
-### 方法二：数据库页面
+### 自定义邮件模板
+在 Authentication → Email Templates 中可以自定义：
+- Magic Link 邮件
+- OTP 验证码邮件
+- Password Reset 邮件
 
-1. 在 Supabase 仪表板中，点击左侧 **Table Editor**
-2. 点击 **New Table** 创建表
-3. 按照以下结构手动创建字段
+## 数据库迁移
 
-## 3. 获取 API 密钥
-
-1. 点击左侧 **Settings** (设置图标)
-2. 点击 **API**
-3. 复制以下信息：
-   - **Project URL** → `VITE_SUPABASE_URL`
-   - **anon/public key** → `VITE_SUPABASE_ANON_KEY`
-
-## 4. 更新环境变量
-
-编辑项目根目录的 `.env` 文件：
-
-```bash
-VITE_SUPABASE_URL=你的项目 URL
-VITE_SUPABASE_ANON_KEY=你的 anon key
-```
-
-## 5. 验证连接
-
-运行 `npm run dev` 启动项目，打开浏览器查看是否正常加载数据。
-
-## 数据库表结构
-
-### wishes 表
+运行以下 SQL 创建 users 表（如果需要存储额外用户信息）：
 
 ```sql
-CREATE TABLE wishes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  category TEXT NOT NULL CHECK (category IN ('blessing', 'wish', 'vent')),
-  content TEXT NOT NULL,
-  author TEXT NOT NULL DEFAULT '匿名',
-  is_public BOOLEAN NOT NULL DEFAULT true,
-  likes INTEGER NOT NULL DEFAULT 0,
-  bg_variant INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+-- 已在 004_create_users_table.sql 中定义
+-- 运行：进入 SQL Editor → New Query → 粘贴执行
 ```
 
-### 索引
+## 环境变量
 
-- `idx_wishes_category` - 按类型查询
-- `idx_wishes_created_at` - 按时间排序
-- `idx_wishes_is_public` - 按公开状态筛选
+确保 `.env` 文件包含：
 
-### 函数
+```
+VITE_SUPABASE_URL=你的项目 URL
+VITE_SUPABASE_ANON_KEY=你的 Anon Key
+```
 
-- `increment_like(wish_id)` - 点赞计数 +1
+## 测试登录
 
-### 安全策略 (RLS)
+1. 点击"去祈愿"按钮
+2. 如果未登录，会弹出登录/注册窗口
+3. 新用户：输入邮箱 → 获取验证码 → 输入验证码 → 设置密码
+4. 老用户：输入邮箱和密码 → 登录
 
-- 任何人可查看公开的心愿
-- 任何人可创建心愿
-- 任何人可点赞心愿
+## 注意事项
 
-## 故障排查
-
-### 问题：无法连接数据库
-
-1. 检查 `.env` 文件是否存在
-2. 确认 URL 和 key 是否正确
-3. 检查网络是否可访问 Supabase
-
-### 问题：数据加载失败
-
-1. 检查浏览器控制台错误信息
-2. 确认 wishes 表是否存在
-3. 确认 RLS 策略是否已启用
-
-### 问题：无法插入数据
-
-1. 检查表结构是否正确
-2. 确认 INSERT 策略是否存在
-3. 查看 Supabase 日志
+- 验证码有效期：10 分钟
+- 验证码重发间隔：60 秒
+- 密码要求：至少 6 位
+- 登录状态保持：默认 1 周（可配置）
