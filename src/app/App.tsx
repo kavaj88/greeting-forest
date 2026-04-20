@@ -15,11 +15,11 @@ interface UserSession {
   expiresAt: string;
 }
 
-const TABS: { id: WishCategory; label: string; icon: React.ReactNode }[] = [
-  { id: 'all', label: '全部心愿', icon: <Leaf size={16} /> },
-  { id: 'blessing', label: '祈福', icon: <Flame size={16} /> },
-  { id: 'wish', label: '祝愿', icon: <Sparkles size={16} /> },
-  { id: 'vent', label: '吐槽', icon: <Shield size={16} /> },
+const TABS: { id: WishCategory; label: string; labelEn: string; icon: React.ReactNode }[] = [
+  { id: 'all', label: '全部心愿', labelEn: 'All Wishes', icon: <Leaf size={16} /> },
+  { id: 'blessing', label: '祈福', labelEn: 'Blessings', icon: <Flame size={16} /> },
+  { id: 'wish', label: '祝愿', labelEn: 'Wishes', icon: <Sparkles size={16} /> },
+  { id: 'vent', label: '吐槽', labelEn: 'Vent', icon: <Shield size={16} /> },
 ];
 
 export default function App() {
@@ -167,8 +167,11 @@ export default function App() {
                   <p className="text-[9px] uppercase tracking-widest text-stone-400 whitespace-nowrap">WISHING YOU</p>
                 </div>
                 <div className="hidden h-5 w-px bg-stone-200 lg:block"></div>
-                <div className="hidden text-[11px] leading-relaxed text-stone-500 lg:block whitespace-nowrap">
-                  <span className="font-semibold text-stone-700">如是愿，如是成</span> — 凡所祈愿，如是圆满；以如是心，成世间愿。
+                <div className="hidden text-[11px] leading-relaxed text-stone-500 lg:block">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold text-stone-700">如是愿，如是成 — 凡所祈愿，如是圆满；以如是心，成世间愿。</span>
+                    <span className="text-stone-500">As you wish, so it becomes — May all your wishes be fulfilled with a mindful heart.</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -178,19 +181,24 @@ export default function App() {
                 <div className="hidden lg:flex items-center gap-2 mr-2">
                   <button
                     onClick={handleOpenUserProfile}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100 hover:bg-stone-200 transition-colors"
+                    className="flex flex-col items-center gap-0 px-3 py-1.5 rounded-full bg-stone-100 hover:bg-stone-200 transition-colors"
                   >
-                    <User size={14} className="text-stone-500" />
-                    <span className="text-xs text-stone-600 truncate max-w-[150px]">
-                      {userSession.email.split('@')[0]}
+                    <span className="flex items-center gap-1.5">
+                      <User size={14} className="text-stone-500" />
+                      <span className="text-xs text-stone-600 truncate max-w-[120px]">
+                        {userSession.email.split('@')[0]}
+                      </span>
                     </span>
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-stone-500 hover:bg-stone-100 transition-colors"
+                    className="flex flex-col items-center gap-0 px-3 py-1.5 rounded-full text-xs font-medium text-stone-500 hover:bg-stone-100 transition-colors"
                   >
-                    <LogOut size={14} />
-                    <span>退出</span>
+                    <span className="flex items-center gap-1">
+                      <LogOut size={14} />
+                      <span>退出</span>
+                    </span>
+                    <span className="text-[8px] text-stone-400 leading-none mt-0.5">Logout</span>
                   </button>
                 </div>
               )}
@@ -201,7 +209,7 @@ export default function App() {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={twMerge(
-                      'relative flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-200 whitespace-nowrap',
+                      'relative flex flex-col items-center gap-0 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-200',
                       activeTab === tab.id
                         ? 'text-stone-900'
                         : 'text-stone-500 hover:bg-stone-100/80 hover:text-stone-700'
@@ -214,19 +222,25 @@ export default function App() {
                         transition={{ type: 'spring', duration: 0.5 }}
                       />
                     )}
-                    <span className="relative z-10">{tab.icon}</span>
-                    <span className="relative z-10">{tab.label}</span>
+                    <span className="relative z-10 flex items-center gap-1">
+                      {tab.icon}
+                      {tab.label}
+                    </span>
+                    <span className="relative z-10 text-[9px] text-stone-400 leading-none mt-0.5">{tab.labelEn}</span>
                   </button>
                 ))}
               </nav>
 
               <button
                 onClick={handleOpenWishModal}
-                className="flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-amber-500/20 transition-transform hover:scale-105 hover:bg-amber-600 whitespace-nowrap"
+                className="flex flex-col items-center gap-0 rounded-full bg-amber-500 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-amber-500/20 transition-transform hover:scale-105 hover:bg-amber-600"
               >
-                <Plus size={14} />
-                <span className="hidden sm:inline">去祈愿</span>
-                <span className="sm:hidden">写心愿</span>
+                <span className="flex items-center gap-1">
+                  <Plus size={14} />
+                  <span className="hidden sm:inline">去祈愿</span>
+                  <span className="sm:hidden">写心愿</span>
+                </span>
+                <span className="text-[8px] uppercase tracking-wider hidden sm:block">Make a Wish</span>
               </button>
             </div>
           </div>
@@ -239,14 +253,17 @@ export default function App() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={twMerge(
-                'flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors',
+                'flex shrink-0 flex-col items-center gap-0 rounded-full px-4 py-2 text-sm font-medium transition-colors',
                 activeTab === tab.id
                   ? 'bg-amber-100 text-stone-900'
                   : 'bg-stone-100/50 text-stone-500'
               )}
             >
-              {tab.icon}
-              {tab.label}
+              <span className="flex items-center gap-1">
+                {tab.icon}
+                {tab.label}
+              </span>
+              <span className="text-[8px] text-stone-400 leading-none mt-0.5">{tab.labelEn}</span>
             </button>
           ))}
         </div>
@@ -259,22 +276,25 @@ export default function App() {
             <div className="w-full text-center py-20">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-amber-500 border-t-transparent"></div>
               <p className="mt-4 text-stone-500">正在加载心愿...</p>
+              <p className="text-xs text-stone-400 uppercase tracking-wider">Loading wishes...</p>
             </div>
           ) : error ? (
             <div className="w-full text-center py-20">
               <div className="text-red-500 text-lg mb-2">⚠️ 加载失败</div>
               <p className="text-stone-500 mb-4">{error}</p>
+              <p className="text-xs text-stone-400 mb-4">Failed to load</p>
               <button
                 onClick={loadWishes}
                 className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
               >
-                重试
+                重试 · Retry
               </button>
             </div>
           ) : filteredWishes.length === 0 ? (
             <div className="w-full text-center py-20">
               <Leaf className="mx-auto h-12 w-12 text-stone-300" />
               <p className="mt-4 text-stone-500">暂无心愿，成为第一个许愿的人吧！</p>
+              <p className="text-xs text-stone-400 mt-1">No wishes yet. Be the first to make a wish!</p>
             </div>
           ) : (
             <AnimatePresence mode="popLayout">
