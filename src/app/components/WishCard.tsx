@@ -42,7 +42,7 @@ export const WishCard = memo(({ wish, onLike }: WishCardProps) => {
   });
 
   // 只显示心声内容，过滤掉发念缘由
-  const displayContent = wish.isPublic ? wish.content.split('\n\n【发念缘由】')[0] : '保密';
+  const displayContent = wish.isPublic ? wish.content.split('\n\n【发念缘由】')[0] : '保密 · Private';
 
   return (
     <motion.div
