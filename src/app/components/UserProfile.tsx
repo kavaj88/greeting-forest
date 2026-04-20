@@ -36,6 +36,13 @@ const categoryLabels: Record<WishCategory, string> = {
   vent: '吐槽',
 };
 
+const categoryLabelsEn: Record<WishCategory, string> = {
+  all: 'All',
+  blessing: 'Blessings',
+  wish: 'Wishes',
+  vent: 'Vent',
+};
+
 const categoryColors: Record<WishCategory, string> = {
   all: '',
   blessing: 'bg-red-50 text-red-700 border-red-200',
@@ -275,9 +282,14 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
         <p className="text-sm text-stone-700 line-clamp-3">{wish.content}</p>
       </td>
       <td className="py-3 px-4 text-center">
-        <span className={twMerge('text-sm', wish.reason ? 'text-amber-600 font-medium' : 'text-stone-400')}>
-          {wish.reason ? '有' : '无'}
-        </span>
+        <div className="flex flex-col items-center gap-0.5">
+          <span className={twMerge('text-sm', wish.reason ? 'text-amber-600 font-medium' : 'text-stone-400')}>
+            {wish.reason ? '有' : '无'}
+          </span>
+          <span className="text-[8px] text-stone-400 leading-none">
+            {wish.reason ? 'Yes' : 'No'}
+          </span>
+        </div>
       </td>
       <td className="py-3 px-4 text-center">
         <span className="text-sm text-stone-600">{wish.author}</span>
@@ -287,13 +299,19 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
       </td>
       <td className="py-3 px-4 text-center">
         {wish.is_public ? (
-          <span className="text-xs text-green-600 flex items-center justify-center gap-1">
-            <CheckCircle size={12} /> 公开
-          </span>
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="text-xs text-green-600 flex items-center justify-center gap-1">
+              <CheckCircle size={12} /> 公开
+            </span>
+            <span className="text-[8px] text-stone-400 leading-none">Public</span>
+          </div>
         ) : (
-          <span className="text-xs text-stone-500 flex items-center justify-center gap-1">
-            <XCircle size={12} /> 保密
-          </span>
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="text-xs text-stone-500 flex items-center justify-center gap-1">
+              <XCircle size={12} /> 保密
+            </span>
+            <span className="text-[8px] text-stone-400 leading-none">Private</span>
+          </div>
         )}
       </td>
     </motion.tr>
@@ -332,13 +350,24 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
       </div>
       <p className="text-sm text-stone-700 line-clamp-2 mb-2">{wish.content}</p>
       <div className="flex items-center justify-between text-xs text-stone-500 mb-1">
-        <span>署名：{wish.author}</span>
-        <span className={twMerge('font-medium', wish.reason ? 'text-amber-600' : 'text-stone-400')}>
-          故事：{wish.reason ? '有' : '无'}
-        </span>
+        <div className="flex flex-col">
+          <span>署名 · Author</span>
+          <span className="text-stone-700">{wish.author}</span>
+        </div>
+        <div className="flex flex-col items-end">
+          <span className={twMerge('font-medium', wish.reason ? 'text-amber-600' : 'text-stone-400')}>
+            故事 · Story
+          </span>
+          <span className={twMerge('text-xs', wish.reason ? 'text-amber-600' : 'text-stone-400')}>
+            {wish.reason ? '有 · Yes' : '无 · No'}
+          </span>
+        </div>
       </div>
       <div className="flex items-center justify-between text-xs text-stone-500">
-        <span>{formatDate(wish.created_at)}</span>
+        <div className="flex flex-col">
+          <span>日期 · Date</span>
+          <span>{formatDate(wish.created_at)}</span>
+        </div>
       </div>
     </motion.div>
   );
@@ -370,9 +399,12 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 flex items-center justify-between border-b border-stone-100 p-5 pb-4 bg-white rounded-t-2xl">
-              <h2 className="text-xl font-semibold text-stone-800 font-serif">
-                心愿详情 #{selectedWish.short_id}
-              </h2>
+              <div className="flex flex-col">
+                <h2 className="text-xl font-semibold text-stone-800 font-serif">
+                  心愿详情
+                </h2>
+                <span className="text-[9px] text-stone-400 leading-none">Wish Details #{selectedWish.short_id}</span>
+              </div>
               <button
                 onClick={() => {
                   setSelectedWish(null);
@@ -395,17 +427,26 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-stone-600 mb-1 block">心声内容</label>
+                  <div className="flex flex-col gap-0.5 mb-1">
+                    <label className="text-sm font-medium text-stone-600">心声内容</label>
+                    <span className="text-[8px] text-stone-400 leading-none">Your Message</span>
+                  </div>
                   <p className="text-stone-700 bg-stone-50 rounded-lg p-4 font-serif">{contentOnly}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-stone-600 mb-1 block">署名</label>
+                    <div className="flex flex-col gap-0.5 mb-1">
+                      <label className="text-sm font-medium text-stone-600">署名</label>
+                      <span className="text-[8px] text-stone-400 leading-none">Author</span>
+                    </div>
                     <p className="text-stone-700 bg-stone-50 rounded-lg p-3 font-serif">{selectedWish.author}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-stone-600 mb-1 block">日期</label>
+                    <div className="flex flex-col gap-0.5 mb-1">
+                      <label className="text-sm font-medium text-stone-600">日期</label>
+                      <span className="text-[8px] text-stone-400 leading-none">Date</span>
+                    </div>
                     <p className="text-stone-700 bg-stone-50 rounded-lg p-3 font-serif">{formatDate(selectedWish.created_at)}</p>
                   </div>
                 </div>
@@ -413,8 +454,11 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
                 {/* 公开/保密开关 */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-sm font-medium text-stone-600">是否公开</label>
-                    <p className="text-xs text-stone-400 mt-0.5">不公开将在牌子上显示"保密"</p>
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-sm font-medium text-stone-600">是否公开</label>
+                      <span className="text-[8px] text-stone-400 leading-none">Public Visibility</span>
+                    </div>
+                    <p className="text-xs text-stone-400 mt-1">不公开将显示"保密" · Private shows "Private" on wish board</p>
                   </div>
                   <button
                     type="button"
@@ -438,17 +482,20 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
               {/* 发念缘由（可编辑） */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-sm font-medium text-stone-600">发念缘由</label>
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-stone-600">发念缘由</label>
+                    <span className="text-[8px] text-stone-400 leading-none">Reason Behind This Wish</span>
+                  </div>
                   {selectedWish.reason_review_status === 'pending' && (
                     <span className="text-xs text-amber-600 flex items-center gap-1">
-                      <AlertCircle size={12} /> 待审核
+                      <AlertCircle size={12} /> 待审核 · Pending
                     </span>
                   )}
                 </div>
                 <textarea
                   value={editReason}
                   onChange={(e) => setEditReason(e.target.value)}
-                  placeholder="分享你写下这个心愿的故事或原因..."
+                  placeholder="分享你写下这个心愿的故事或原因... · Share the story or reason behind this wish..."
                   rows={6}
                   maxLength={800}
                   className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 p-4 text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/10 font-serif"
@@ -462,7 +509,7 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
                       onClick={() => setEditReason(selectedWish.reason || '')}
                       className="px-4 py-2 text-sm font-medium text-stone-500 hover:bg-stone-100 rounded-lg"
                     >
-                      取消
+                      取消 · Cancel
                     </button>
                     <button
                       type="button"
@@ -470,7 +517,7 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
                       disabled={isSubmitting}
                       className="px-4 py-2 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 disabled:opacity-50"
                     >
-                      {isSubmitting ? '提交审核中...' : '提交修改'}
+                      {isSubmitting ? '提交审核中... · Submitting' : '提交修改 · Submit'}
                     </button>
                   </div>
                 )}
@@ -486,18 +533,21 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <Trash2 size={16} />
-                    删除此心愿
+                    删除此心愿 · Delete
                   </button>
                 ) : (
                   <div className="flex items-center justify-between gap-2 bg-red-50 p-3 rounded-lg">
-                    <span className="text-sm text-red-700">确定要删除此心愿吗？此操作不可恢复。</span>
+                    <div>
+                      <span className="text-sm text-red-700 block">确定要删除此心愿吗？</span>
+                      <span className="text-xs text-red-600 block mt-0.5">This action cannot be undone.</span>
+                    </div>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => setShowDeleteConfirm(false)}
                         className="px-3 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-100 rounded-lg"
                       >
-                        取消
+                        取消 · Cancel
                       </button>
                       <button
                         type="button"
@@ -505,7 +555,7 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
                         disabled={isSubmitting}
                         className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
                       >
-                        {isSubmitting ? '删除中...' : '确认删除'}
+                        {isSubmitting ? '删除中... · Deleting' : '确认删除 · Delete'}
                       </button>
                     </div>
                   </div>
@@ -543,12 +593,18 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={onBack}
-              className="flex items-center gap-1 text-stone-600 hover:text-stone-900 transition-colors"
+              className="flex flex-col items-center gap-0 text-stone-600 hover:text-stone-900 transition-colors"
             >
-              <ChevronLeft size={20} />
-              <span className="font-medium">返回</span>
+              <div className="flex items-center gap-1">
+                <ChevronLeft size={20} />
+                <span className="font-medium">返回</span>
+              </div>
+              <span className="text-[8px] text-stone-400 leading-none">Back</span>
             </button>
-            <h1 className="text-lg font-semibold text-stone-800 font-serif">我的</h1>
+            <div className="flex flex-col items-center">
+              <h1 className="text-lg font-semibold text-stone-800 font-serif">我的</h1>
+              <span className="text-[9px] text-stone-400 leading-none">My Wishes</span>
+            </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
@@ -566,13 +622,48 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
                 </colgroup>
                 <thead className="bg-stone-50 border-b border-stone-200 sticky top-0">
                   <tr className="text-center text-sm font-medium text-stone-600">
-                    <th className="py-3 px-4">类型</th>
-                    <th className="py-3 px-4">编号</th>
-                    <th className="py-3 px-4 text-left">心声内容</th>
-                    <th className="py-3 px-4">故事</th>
-                    <th className="py-3 px-4">署名</th>
-                    <th className="py-3 px-4">日期</th>
-                    <th className="py-3 px-4">状态</th>
+                    <th className="py-3 px-4">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span>类型</span>
+                        <span className="text-[8px] text-stone-400 leading-none">Category</span>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span>编号</span>
+                        <span className="text-[8px] text-stone-400 leading-none">ID</span>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4 text-left">
+                      <div className="flex flex-col gap-0.5">
+                        <span>心声内容</span>
+                        <span className="text-[8px] text-stone-400 leading-none">Heart Message</span>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span>故事</span>
+                        <span className="text-[8px] text-stone-400 leading-none">Story</span>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span>署名</span>
+                        <span className="text-[8px] text-stone-400 leading-none">Author</span>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span>日期</span>
+                        <span className="text-[8px] text-stone-400 leading-none">Date</span>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span>状态</span>
+                        <span className="text-[8px] text-stone-400 leading-none">Status</span>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -591,6 +682,7 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
             <div className="text-center py-20">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-amber-500 border-t-transparent"></div>
               <p className="mt-4 text-stone-500">正在加载...</p>
+              <p className="text-xs text-stone-400 uppercase tracking-wider mt-1">Loading...</p>
             </div>
           )}
 
@@ -598,6 +690,7 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
             <div className="text-center py-20">
               <FileText className="mx-auto h-12 w-12 text-stone-300" />
               <p className="mt-4 text-stone-500">暂无心愿记录</p>
+              <p className="text-xs text-stone-400 uppercase tracking-wider mt-1">No wishes yet</p>
             </div>
           )}
 
@@ -605,12 +698,14 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
             <div className="text-center py-4">
               <div className="inline-block animate-spin rounded-full h-6 w-6 border-4 border-amber-500 border-t-transparent"></div>
               <p className="mt-2 text-xs text-stone-500">加载中...</p>
+              <p className="text-[10px] text-stone-400 uppercase tracking-wider mt-0.5">Loading...</p>
             </div>
           )}
 
           {!hasMore && wishes.length > 0 && (
-            <div className="text-center py-4 text-xs text-stone-500">
-              已经到底了
+            <div className="text-center py-4">
+              <p className="text-xs text-stone-500">已经到底了</p>
+              <p className="text-[10px] text-stone-400 uppercase tracking-wider mt-0.5">No more items</p>
             </div>
           )}
         </main>
