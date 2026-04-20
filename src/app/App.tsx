@@ -6,6 +6,7 @@ import { Wish, WishCategory } from './types';
 import { WishCard } from './components/WishCard';
 import { CreateWishModal } from './components/CreateWishModal';
 import { AuthModal } from './components/AuthModal';
+import { UserProfile } from './components/UserProfile';
 import { fetchWishes, createWish as apiCreateWish, likeWish as apiLikeWish } from '../lib/api';
 
 interface UserSession {
@@ -30,6 +31,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userSession, setUserSession] = useState<UserSession | null>(null);
+  const [showUserProfile, setShowUserProfile] = useState(false);
 
   // 检查用户登录状态
   useEffect(() => {
@@ -92,6 +94,16 @@ export default function App() {
     setUserSession(null);
   };
 
+  // 打开用户资料页面
+  const handleOpenUserProfile = () => {
+    setShowUserProfile(true);
+  };
+
+  // 关闭用户资料页面
+  const handleCloseUserProfile = () => {
+    setShowUserProfile(false);
+  };
+
   // 认证成功回调
   const handleAuthSuccess = () => {
     setIsAuthModalOpen(false);
@@ -112,7 +124,7 @@ export default function App() {
       author: newWish.author,
       isPublic: newWish.isPublic,
       bgVariant: Math.floor(Math.random() * 4),
-    });
+    }, userSession?.email);
 
     if (result.success && result.data) {
       setWishes((prev) => [result.data!, ...prev]);
@@ -164,12 +176,15 @@ export default function App() {
             <div className="flex items-center gap-1 lg:gap-2">
               {userSession && (
                 <div className="hidden lg:flex items-center gap-2 mr-2">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100">
+                  <button
+                    onClick={handleOpenUserProfile}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100 hover:bg-stone-200 transition-colors"
+                  >
                     <User size={14} className="text-stone-500" />
                     <span className="text-xs text-stone-600 truncate max-w-[150px]">
                       {userSession.email.split('@')[0]}
                     </span>
-                  </div>
+                  </button>
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-stone-500 hover:bg-stone-100 transition-colors"
@@ -287,10 +302,10 @@ export default function App() {
       {userSession && (
         <div className="fixed bottom-6 left-6 z-40 sm:hidden">
           <button
-            onClick={handleLogout}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-200 text-stone-600 shadow-lg"
+            onClick={handleOpenUserProfile}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg"
           >
-            <LogOut size={18} />
+            <User size={18} />
           </button>
         </div>
       )}
@@ -315,6 +330,12 @@ export default function App() {
         onClose={() => setIsAuthModalOpen(false)}
         onAuthSuccess={handleAuthSuccess}
       />
+
+      {showUserProfile && userSession && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-white">
+          <UserProfile user={userSession} onBack={handleCloseUserProfile} />
+        </div>
+      )}
     </div>
   );
 }

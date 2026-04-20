@@ -10,6 +10,11 @@ export interface DatabaseWish {
   bg_variant: number;
   created_at: string;
   updated_at: string;
+  owner_email?: string;
+  reason?: string;
+  reason_review_status?: 'pending' | 'approved' | 'rejected';
+  reason_pending?: string;
+  short_id?: string;
 }
 
 export interface ApiWish {
@@ -43,13 +48,14 @@ const fromDatabase = (dbWish: DatabaseWish): ApiWish => ({
 });
 
 // 转换前端格式到数据库格式
-const toDatabase = (wish: Omit<ApiWish, 'id' | 'createdAt'>) => ({
+const toDatabase = (wish: Omit<ApiWish, 'id' | 'createdAt'>, ownerEmail?: string) => ({
   category: wish.category,
   content: wish.content,
   author: wish.author,
   is_public: wish.isPublic,
   likes: wish.likes,
   bg_variant: wish.bgVariant,
+  owner_email: ownerEmail,
 });
 
 // 获取所有心愿
@@ -75,12 +81,13 @@ export async function fetchWishes(): Promise<ApiResult<ApiWish[]>> {
 
 // 添加心愿
 export async function createWish(
-  wish: Omit<ApiWish, 'id' | 'createdAt' | 'likes'>
+  wish: Omit<ApiWish, 'id' | 'createdAt' | 'likes'>,
+  ownerEmail?: string
 ): Promise<ApiResult<ApiWish>> {
   try {
     const { data, error } = await supabase
       .from('wishes')
-      .insert([toDatabase({ ...wish, likes: 0 })])
+      .insert([toDatabase({ ...wish, likes: 0 }, ownerEmail)])
       .select()
       .single();
 

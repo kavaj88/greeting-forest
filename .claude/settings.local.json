@@ -16,7 +16,10 @@
       "mcp__puppeteer__puppeteer_click",
       "mcp__puppeteer__puppeteer_evaluate",
       "Bash(cat:*)",
-      "Bash(cd D:\\\\codes\\\\openclaw\\\\greeting-forest:*)"
+      "Bash(cd D:\\\\codes\\\\openclaw\\\\greeting-forest:*)",
+      "Bash(sleep 3:*)",
+      "Skill(browse)",
+      "Skill(gstack)"
     ]
   }
 }
