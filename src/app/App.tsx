@@ -131,7 +131,13 @@ export default function App() {
   );
 
   const storedPage = pagePerTab[activeTab];
-  const currentPage = storedPage > totalPages ? totalPages : storedPage < 1 ? 1 : storedPage;
+
+  // 如果 storedPage 越界，直接更新 pagePerTab（用 useEffect 避免 render 中的 setState）
+  useEffect(() => {
+    if (storedPage < 1 || storedPage > totalPages) {
+      setPagePerTab((prev) => ({ ...prev, [activeTab]: Math.max(1, Math.min(storedPage, totalPages)) }));
+    }
+  }, [activeTab, storedPage, totalPages]);
 
   const setCurrentPageForTab = useCallback((tab: WishCategory, page: number | ((prev: number) => number)) => {
     setPagePerTab((prev) => {
@@ -141,22 +147,16 @@ export default function App() {
     });
   }, []);
 
-  // 同步 clamp 后的页码到 state（防止下次渲染时 again 越界）
-  useEffect(() => {
-    if (storedPage !== currentPage) {
-      setPagePerTab((prev) => ({ ...prev, [activeTab]: currentPage }));
-    }
-  }, [activeTab, storedPage, currentPage]);
-
   // 页码变化时滚动到顶部
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [activeTab, currentPage]);
+  }, [activeTab, storedPage]);
 
-  // 当前页的心愿
+  // 当前页的心愿（使用 clamp 后的 safePage）
+  const safePage = Math.max(1, Math.min(storedPage, totalPages));
   const pagedWishes = useMemo(
-    () => filteredWishes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
-    [filteredWishes, currentPage]
+    () => filteredWishes.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [filteredWishes, safePage]
   );
 
   const handleAddWish = async (newWish: Omit<Wish, 'id' | 'createdAt' | 'likes' | 'bgVariant'>) => {
@@ -312,7 +312,7 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto w-full px-4 py-8 sm:px-6 lg:px-8">
+      <main className="relative z-10 mx-auto w-full px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto pb-24 flex flex-wrap justify-center gap-3 max-w-[1920px]">
           {isLoading ? (
             <div className="w-full text-center py-20">
@@ -354,7 +354,7 @@ export default function App() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setCurrentPageForTab(activeTab, (p) => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
+                      disabled={safePage === 1}
                       className="flex items-center justify-center w-8 h-8 rounded-lg text-stone-500 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronLeft size={18} />
@@ -363,7 +363,7 @@ export default function App() {
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter((page) => {
                         if (page === 1 || page === totalPages) return true;
-                        if (Math.abs(page - currentPage) <= 2) return true;
+                        if (Math.abs(page - safePage) <= 2) return true;
                         return false;
                       })
                       .reduce<(number | string)[]>((acc, page, idx, arr) => {
@@ -384,7 +384,7 @@ export default function App() {
                             onClick={() => setCurrentPageForTab(activeTab, item)}
                             className={twMerge(
                               'w-8 h-8 rounded-lg text-sm font-medium transition-all',
-                              currentPage === item
+                              safePage === item
                                 ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
                                 : 'text-stone-600 hover:bg-stone-100'
                             )}
@@ -396,7 +396,7 @@ export default function App() {
 
                     <button
                       onClick={() => setCurrentPageForTab(activeTab, (p) => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
+                      disabled={safePage === totalPages}
                       className="flex items-center justify-center w-8 h-8 rounded-lg text-stone-500 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronRight size={18} />
@@ -409,7 +409,7 @@ export default function App() {
               <div className="w-full text-center pb-6">
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-[10px] text-stone-300">
-                    {currentPage}/{totalPages} · {filteredWishes.length}
+                    {safePage}/{totalPages} · {filteredWishes.length}
                   </span>
                 </div>
               </div>
