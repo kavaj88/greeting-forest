@@ -27,7 +27,12 @@ const PAGE_SIZE = 72;
 export default function App() {
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [activeTab, setActiveTab] = useState<WishCategory>('all');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [pagePerTab, setPagePerTab] = useState<Record<WishCategory, number>>({
+    all: 1,
+    blessing: 1,
+    wish: 1,
+    vent: 1,
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -35,7 +40,6 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [userSession, setUserSession] = useState<UserSession | null>(null);
   const [showUserProfile, setShowUserProfile] = useState(false);
-
   // 检查用户登录状态
   useEffect(() => {
     // 从 localStorage 获取 session
@@ -126,21 +130,26 @@ export default function App() {
     [filteredWishes.length]
   );
 
+  const currentPage = pagePerTab[activeTab];
+
+  const setCurrentPageForTab = useCallback((tab: WishCategory, page: number | ((prev: number) => number)) => {
+    setPagePerTab((prev) => {
+      const current = prev[tab];
+      const nextPage = typeof page === 'function' ? page(current) : page;
+      return { ...prev, [tab]: nextPage };
+    });
+  }, []);
+
+  // 页码变化时滚动到顶部
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab, currentPage]);
+
   // 当前页的心愿
   const pagedWishes = useMemo(
     () => filteredWishes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
     [filteredWishes, currentPage]
   );
-
-  // 切换标签时重置到第一页
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab]);
-
-  // 切换页码时滚动到顶部
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentPage]);
 
   const handleAddWish = async (newWish: Omit<Wish, 'id' | 'createdAt' | 'likes' | 'bgVariant'>) => {
     const result = await apiCreateWish({
@@ -337,7 +346,7 @@ export default function App() {
                   <div className="flex items-center gap-1">
                     {/* 上一页 */}
                     <button
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      onClick={() => setCurrentPageForTab(activeTab, (p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
                       className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-stone-600 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
@@ -369,7 +378,7 @@ export default function App() {
                         ) : (
                           <button
                             key={item}
-                            onClick={() => setCurrentPage(item)}
+                            onClick={() => setCurrentPageForTab(activeTab, item)}
                             className={twMerge(
                               'w-10 h-10 rounded-lg text-sm font-medium transition-all',
                               currentPage === item
@@ -384,7 +393,7 @@ export default function App() {
 
                     {/* 下一页 */}
                     <button
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      onClick={() => setCurrentPageForTab(activeTab, (p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
                       className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-stone-600 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
