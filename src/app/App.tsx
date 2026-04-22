@@ -128,7 +128,7 @@ export default function App() {
 
   // 当前页的心愿
   const pagedWishes = useMemo(
-    () => filteredWishes.slice(0, currentPage * PAGE_SIZE),
+    () => filteredWishes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
     [filteredWishes, currentPage]
   );
 
