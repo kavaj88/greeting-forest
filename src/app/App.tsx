@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Leaf, Plus, Flame, Shield, Sparkles, LogOut, User } from 'lucide-react';
+import { Leaf, Plus, Flame, Shield, Sparkles, LogOut, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { Wish, WishCategory } from './types';
 import { WishCard } from './components/WishCard';
@@ -22,9 +22,12 @@ const TABS: { id: WishCategory; label: string; labelEn: string; icon: React.Reac
   { id: 'vent', label: '吐槽', labelEn: 'Vent', icon: <Shield size={16} /> },
 ];
 
+const PAGE_SIZE = 72;
+
 export default function App() {
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [activeTab, setActiveTab] = useState<WishCategory>('all');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -116,6 +119,28 @@ export default function App() {
     () => wishes.filter((wish) => activeTab === 'all' || wish.category === activeTab),
     [wishes, activeTab]
   );
+
+  // 分页计算
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(filteredWishes.length / PAGE_SIZE)),
+    [filteredWishes.length]
+  );
+
+  // 当前页的心愿
+  const pagedWishes = useMemo(
+    () => filteredWishes.slice(0, currentPage * PAGE_SIZE),
+    [filteredWishes, currentPage]
+  );
+
+  // 切换标签时重置到第一页
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  // 切换页码时滚动到顶部
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   const handleAddWish = async (newWish: Omit<Wish, 'id' | 'createdAt' | 'likes' | 'bgVariant'>) => {
     const result = await apiCreateWish({
@@ -297,13 +322,91 @@ export default function App() {
               <p className="text-xs text-stone-400 mt-1">No wishes yet. Be the first to make a wish!</p>
             </div>
           ) : (
-            <AnimatePresence mode="popLayout">
-              {filteredWishes.map((wish) => (
-                <div key={wish.id} className="w-[200px] sm:w-[220px] md:w-[240px]">
-                  <WishCard wish={wish} onLike={handleLike} />
+            <>
+              <AnimatePresence mode="popLayout">
+                {pagedWishes.map((wish) => (
+                  <div key={wish.id} className="w-[200px] sm:w-[220px] md:w-[240px]">
+                    <WishCard wish={wish} onLike={handleLike} />
+                  </div>
+                ))}
+              </AnimatePresence>
+
+              {/* 分页控件 */}
+              {totalPages > 1 && (
+                <div className="w-full flex justify-center py-8">
+                  <div className="flex items-center gap-1">
+                    {/* 上一页 */}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-stone-600 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft size={16} />
+                      <span className="hidden sm:inline">上一页</span>
+                    </button>
+
+                    {/* 页码按钮 */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((page) => {
+                        // 显示当前页和前后各2页
+                        if (page === 1 || page === totalPages) return true;
+                        if (Math.abs(page - currentPage) <= 2) return true;
+                        return false;
+                      })
+                      .reduce<(number | string)[]>((acc, page, idx, arr) => {
+                        // 添加省略号
+                        if (idx > 0 && page - (arr[idx - 1] as number) > 1) {
+                          acc.push('...');
+                        }
+                        acc.push(page);
+                        return acc;
+                      }, [])
+                      .map((item, idx) =>
+                        typeof item === 'string' ? (
+                          <span key={`ellipsis-${idx}`} className="px-2 text-stone-400">
+                            ...
+                          </span>
+                        ) : (
+                          <button
+                            key={item}
+                            onClick={() => setCurrentPage(item)}
+                            className={twMerge(
+                              'w-10 h-10 rounded-lg text-sm font-medium transition-all',
+                              currentPage === item
+                                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
+                                : 'text-stone-600 hover:bg-stone-100'
+                            )}
+                          >
+                            {item}
+                          </button>
+                        )
+                      )}
+
+                    {/* 下一页 */}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-stone-600 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <span className="hidden sm:inline">下一页</span>
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </AnimatePresence>
+              )}
+
+              {/* 底部统计 */}
+              <div className="w-full text-center pb-6">
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-xs text-stone-400">
+                    第 {currentPage} 页 · Page {currentPage}
+                  </span>
+                  <span className="text-[10px] text-stone-300">
+                    共 {filteredWishes.length} 条心愿 · Total {filteredWishes.length} wishes
+                  </span>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </main>
