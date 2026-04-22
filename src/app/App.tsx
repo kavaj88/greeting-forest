@@ -130,7 +130,8 @@ export default function App() {
     [filteredWishes.length]
   );
 
-  const currentPage = pagePerTab[activeTab];
+  const storedPage = pagePerTab[activeTab];
+  const currentPage = storedPage > totalPages ? totalPages : storedPage < 1 ? 1 : storedPage;
 
   const setCurrentPageForTab = useCallback((tab: WishCategory, page: number | ((prev: number) => number)) => {
     setPagePerTab((prev) => {
@@ -139,6 +140,13 @@ export default function App() {
       return { ...prev, [tab]: nextPage };
     });
   }, []);
+
+  // 同步 clamp 后的页码到 state（防止下次渲染时 again 越界）
+  useEffect(() => {
+    if (storedPage !== currentPage) {
+      setPagePerTab((prev) => ({ ...prev, [activeTab]: currentPage }));
+    }
+  }, [activeTab, storedPage, currentPage]);
 
   // 页码变化时滚动到顶部
   useEffect(() => {
@@ -344,26 +352,21 @@ export default function App() {
               {totalPages > 1 && (
                 <div className="w-full flex justify-center py-8">
                   <div className="flex items-center gap-1">
-                    {/* 上一页 */}
                     <button
                       onClick={() => setCurrentPageForTab(activeTab, (p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-stone-600 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center justify-center w-8 h-8 rounded-lg text-stone-500 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
-                      <ChevronLeft size={16} />
-                      <span className="hidden sm:inline">上一页</span>
+                      <ChevronLeft size={18} />
                     </button>
 
-                    {/* 页码按钮 */}
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter((page) => {
-                        // 显示当前页和前后各2页
                         if (page === 1 || page === totalPages) return true;
                         if (Math.abs(page - currentPage) <= 2) return true;
                         return false;
                       })
                       .reduce<(number | string)[]>((acc, page, idx, arr) => {
-                        // 添加省略号
                         if (idx > 0 && page - (arr[idx - 1] as number) > 1) {
                           acc.push('...');
                         }
@@ -380,7 +383,7 @@ export default function App() {
                             key={item}
                             onClick={() => setCurrentPageForTab(activeTab, item)}
                             className={twMerge(
-                              'w-10 h-10 rounded-lg text-sm font-medium transition-all',
+                              'w-8 h-8 rounded-lg text-sm font-medium transition-all',
                               currentPage === item
                                 ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
                                 : 'text-stone-600 hover:bg-stone-100'
@@ -391,14 +394,12 @@ export default function App() {
                         )
                       )}
 
-                    {/* 下一页 */}
                     <button
                       onClick={() => setCurrentPageForTab(activeTab, (p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
-                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-stone-600 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center justify-center w-8 h-8 rounded-lg text-stone-500 hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
-                      <span className="hidden sm:inline">下一页</span>
-                      <ChevronRight size={16} />
+                      <ChevronRight size={18} />
                     </button>
                   </div>
                 </div>
@@ -407,11 +408,8 @@ export default function App() {
               {/* 底部统计 */}
               <div className="w-full text-center pb-6">
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-xs text-stone-400">
-                    第 {currentPage} 页 · Page {currentPage}
-                  </span>
                   <span className="text-[10px] text-stone-300">
-                    共 {filteredWishes.length} 条心愿 · Total {filteredWishes.length} wishes
+                    {currentPage}/{totalPages} · {filteredWishes.length}
                   </span>
                 </div>
               </div>
