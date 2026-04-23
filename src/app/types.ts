@@ -9,4 +9,14 @@ export interface Wish {
   likes: number;
   bgVariant: number;
   isPublic: boolean;
+  reason?: string;
+}
+
+export interface Comment {
+  id: string;
+  wishId: string;
+  author: string;
+  content: string;
+  parentId: string | null;
+  createdAt: number;
 }

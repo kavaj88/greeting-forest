@@ -1,5 +1,90 @@
 import { supabase } from './supabase';
 
+// --- 评论相关类型 ---
+
+export interface DatabaseComment {
+  id: string;
+  wish_id: string;
+  author: string;
+  content: string;
+  parent_id: string | null;
+  created_at: string;
+}
+
+export interface ApiComment {
+  id: string;
+  wishId: string;
+  author: string;
+  content: string;
+  parentId: string | null;
+  createdAt: number;
+}
+
+const fromDatabaseComment = (db: DatabaseComment): ApiComment => ({
+  id: db.id,
+  wishId: db.wish_id,
+  author: db.author,
+  content: db.content,
+  parentId: db.parent_id,
+  createdAt: new Date(db.created_at).getTime(),
+});
+
+// 拉取某心愿的所有评论（按时间升序）
+export async function fetchComments(wishId: string): Promise<ApiResult<ApiComment[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('comments')
+      .select('*')
+      .eq('wish_id', wishId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching comments:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+
+    return { success: true, data: (data as DatabaseComment[]).map(fromDatabaseComment) };
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : '未知错误';
+    console.error('Error fetching comments:', errorMessage);
+    return { success: false, error: errorMessage, data: [] };
+  }
+}
+
+// 发布评论 / 回复
+export async function createComment(params: {
+  wishId: string;
+  author: string;
+  content: string;
+  parentId?: string;
+}): Promise<ApiResult<ApiComment>> {
+  try {
+    const { data, error } = await supabase
+      .from('comments')
+      .insert([{
+        wish_id: params.wishId,
+        author: params.author,
+        content: params.content,
+        parent_id: params.parentId ?? null,
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating comment:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: fromDatabaseComment(data as DatabaseComment) };
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : '未知错误';
+    console.error('Error creating comment:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+// --- 心愿相关类型 ---
+
 export interface DatabaseWish {
   id: string;
   category: 'blessing' | 'wish' | 'vent';
@@ -26,6 +111,7 @@ export interface ApiWish {
   likes: number;
   bgVariant: number;
   createdAt: number;
+  reason?: string;
 }
 
 // API 响应结果类型
@@ -45,6 +131,7 @@ const fromDatabase = (dbWish: DatabaseWish): ApiWish => ({
   likes: dbWish.likes,
   bgVariant: dbWish.bg_variant,
   createdAt: new Date(dbWish.created_at).getTime(),
+  reason: dbWish.reason,
 });
 
 // 转换前端格式到数据库格式

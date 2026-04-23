@@ -1,5 +1,5 @@
 import React, { useState, memo } from 'react';
-import { Heart, MessageCircle } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { motion } from 'motion/react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -8,6 +8,7 @@ import { Wish, WishCategory } from '../types';
 interface WishCardProps {
   wish: Wish;
   onLike: (id: string) => void;
+  onClick?: (id: string) => void;
 }
 
 const categoryConfig: Record<Exclude<WishCategory, 'all'>, { label: string; badgeClasses: string; borderClass: string; glowColor: string }> = {
@@ -23,7 +24,7 @@ const bgVariants = [
   'bg-[#f8fafc]/30', // 3 - light slate
 ];
 
-export const WishCard = memo(({ wish, onLike }: WishCardProps) => {
+export const WishCard = memo(({ wish, onLike, onClick }: WishCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
 
   const handleLike = () => {
@@ -51,9 +52,11 @@ export const WishCard = memo(({ wish, onLike }: WishCardProps) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ duration: 0.3 }}
+      onClick={wish.isPublic && onClick ? () => onClick(wish.id) : undefined}
       className={twMerge(
         `relative flex flex-col overflow-hidden rounded-lg border ${config.borderClass} p-1.5 pl-[12px] shadow-sm transition-shadow hover:shadow-md aspect-[2/1]`,
-        bgClass
+        bgClass,
+        wish.isPublic && onClick && 'cursor-pointer hover:scale-[1.02]'
       )}
       style={{
         boxShadow: `0 0 20px -5px ${config.glowColor}, inset 0 0 20px -15px ${config.glowColor}`,
@@ -78,7 +81,10 @@ export const WishCard = memo(({ wish, onLike }: WishCardProps) => {
           {config.label}
         </span>
         <button
-          onClick={handleLike}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleLike();
+          }}
           className={twMerge(
             'flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs transition-colors',
             isLiked ? 'text-rose-500' : 'text-stone-400 hover:bg-stone-100 hover:text-rose-400'

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Leaf, Plus, Flame, Shield, Sparkles, LogOut, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Leaf, Plus, Flame, Shield, Sparkles, LogOut, User, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { Wish, WishCategory } from './types';
 import { WishCard } from './components/WishCard';
+import { WishDetailPanel } from './components/wish-detail-panel';
 import { CreateWishModal } from './components/CreateWishModal';
 import { AuthModal } from './components/AuthModal';
 import { UserProfile } from './components/UserProfile';
@@ -40,6 +41,10 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [userSession, setUserSession] = useState<UserSession | null>(null);
   const [showUserProfile, setShowUserProfile] = useState(false);
+  const [selectedWish, setSelectedWish] = useState<Wish | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Wish[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
   // 检查用户登录状态
   useEffect(() => {
     // 从 localStorage 获取 session
@@ -119,10 +124,12 @@ export default function App() {
     }
   };
 
-  const filteredWishes = useMemo(
-    () => wishes.filter((wish) => activeTab === 'all' || wish.category === activeTab),
-    [wishes, activeTab]
-  );
+  const filteredWishes = useMemo(() => {
+    if (isSearching && searchResults !== null) {
+      return searchResults;
+    }
+    return wishes.filter((wish) => activeTab === 'all' || wish.category === activeTab);
+  }, [wishes, activeTab, isSearching, searchResults]);
 
   // 分页计算
   const totalPages = useMemo(
@@ -184,7 +191,30 @@ export default function App() {
         prev.map((w) => (w.id === id ? { ...w, likes: w.likes + 1 } : w))
       );
     }
-    // 失败时静默处理，不干扰用户体验
+  }, []);
+
+  // 搜索功能
+  const handleSearch = useCallback(() => {
+    const query = searchQuery.trim();
+    if (!query) {
+      setSearchResults(null);
+      setIsSearching(false);
+      return;
+    }
+    setIsSearching(true);
+    const results = wishes.filter((w) => {
+      const matchContent = w.content.toLowerCase().includes(query.toLowerCase());
+      const matchAuthor = (w.author || '').toLowerCase().includes(query.toLowerCase());
+      const matchReason = (w.reason || '').toLowerCase().includes(query.toLowerCase());
+      return matchContent || matchAuthor || matchReason;
+    });
+    setSearchResults(results);
+  }, [searchQuery, wishes]);
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery('');
+    setSearchResults(null);
+    setIsSearching(false);
   }, []);
 
   return (
@@ -219,6 +249,32 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-1 lg:gap-2">
+              {/* 搜索框 */}
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value.slice(0, 10))}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  placeholder="输入署名或内容关键词"
+                  className="w-32 sm:w-48 rounded-full border border-stone-200 bg-white/60 px-3 py-1.5 text-xs outline-none focus:border-amber-400 transition-colors placeholder:text-stone-400"
+                />
+                <button
+                  onClick={handleSearch}
+                  className="rounded-full bg-amber-500 p-1.5 text-white hover:bg-amber-600 transition-colors"
+                >
+                  <Search size={14} />
+                </button>
+                {isSearching && (
+                  <button
+                    onClick={clearSearch}
+                    className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
               {userSession && (
                 <div className="hidden lg:flex items-center gap-2 mr-2">
                   <button
@@ -335,15 +391,38 @@ export default function App() {
           ) : filteredWishes.length === 0 ? (
             <div className="w-full text-center py-20">
               <Leaf className="mx-auto h-12 w-12 text-stone-300" />
-              <p className="mt-4 text-stone-500">暂无心愿，成为第一个许愿的人吧！</p>
-              <p className="text-xs text-stone-400 mt-1">No wishes yet. Be the first to make a wish!</p>
+              <p className="mt-4 text-stone-500">
+                {isSearching ? `"${searchQuery}" 没有找到匹配的心愿` : '暂无心愿，成为第一个许愿的人吧！'}
+              </p>
+              <p className="text-xs text-stone-400 mt-1">
+                {isSearching ? 'No matching wishes found' : 'No wishes yet. Be the first to make a wish!'}
+              </p>
+              {isSearching && (
+                <button
+                  onClick={clearSearch}
+                  className="mt-4 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
+                >
+                  清除搜索 · Clear Search
+                </button>
+              )}
             </div>
           ) : (
             <>
               <AnimatePresence mode="popLayout">
                 {pagedWishes.map((wish) => (
                   <div key={wish.id} className="w-[200px] sm:w-[220px] md:w-[240px]">
-                    <WishCard wish={wish} onLike={handleLike} />
+                    <WishCard
+                      wish={wish}
+                      onLike={handleLike}
+                      onClick={
+                        wish.isPublic
+                          ? (id) => {
+                              const found = wishes.find((w) => w.id === id);
+                              if (found) setSelectedWish(found);
+                            }
+                          : undefined
+                      }
+                    />
                   </div>
                 ))}
               </AnimatePresence>
@@ -466,6 +545,12 @@ export default function App() {
           <UserProfile user={userSession} onBack={handleCloseUserProfile} />
         </div>
       )}
+
+      <WishDetailPanel
+        wish={selectedWish}
+        onClose={() => setSelectedWish(null)}
+        user={userSession}
+      />
     </div>
   );
 }
