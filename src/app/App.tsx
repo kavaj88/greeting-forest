@@ -368,8 +368,8 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 mx-auto w-full px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto pb-24 flex flex-wrap justify-center gap-3 max-w-[1920px]">
+      <main className="relative z-10 mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 py-8">
+        <div className="mx-auto pb-24 flex flex-wrap justify-center gap-2 sm:gap-3 max-w-[1920px]">
           {isLoading ? (
             <div className="w-full text-center py-20">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-amber-500 border-t-transparent"></div>
@@ -410,7 +410,7 @@ export default function App() {
             <>
               <AnimatePresence mode="popLayout">
                 {pagedWishes.map((wish) => (
-                  <div key={wish.id} className="w-[200px] sm:w-[220px] md:w-[240px]">
+                  <div key={wish.id} className="w-full max-w-[280px] sm:w-[200px] md:w-[220px] lg:w-[240px]">
                     <WishCard
                       wish={wish}
                       onLike={handleLike}
