@@ -142,6 +142,10 @@ npm run build  # 构建生产版本
 - Cloudflare Pages
 - GitHub Pages
 
+## 觉得不错，可以加我和关注公众号
+
+<img src="./public/wx.png" width="258" height="258" alt="微信二维码">     ![公众号](./public/qRcode.jpg)  
+
 ## 安全
 
 - 启用行级安全 (RLS)
