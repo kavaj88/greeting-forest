@@ -21,6 +21,7 @@ export function AuthModal({ isOpen, mode, onClose, onAuthSuccess }: AuthModalPro
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [codeTimer, setCodeTimer] = useState(0);
+  const [showHelpImage, setShowHelpImage] = useState(false);
 
   // 重置状态
   useEffect(() => {
@@ -378,6 +379,14 @@ export function AuthModal({ isOpen, mode, onClose, onAuthSuccess }: AuthModalPro
                     >
                       忘记密码？
                     </button>
+                    <span className="mx-2">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowHelpImage(true)}
+                      className="text-amber-600 font-medium hover:underline"
+                    >
+                      不会注册？
+                    </button>
                   </>
                 ) : (
                   <>
@@ -393,6 +402,35 @@ export function AuthModal({ isOpen, mode, onClose, onAuthSuccess }: AuthModalPro
                 )}
               </div>
             </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* 注册帮助图片弹窗 */}
+      {showHelpImage && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 overflow-auto"
+          onClick={() => setShowHelpImage(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="relative flex-shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowHelpImage(false)}
+              className="absolute -right-3 -top-3 rounded-full bg-white p-1.5 shadow-lg text-stone-500 hover:text-stone-700 transition-colors z-10"
+            >
+              <X size={18} />
+            </button>
+            <img
+              src="/manager.jpg"
+              alt="注册帮助"
+              className="rounded-xl shadow-2xl"
+              style={{ maxHeight: '85vh', maxWidth: '90vw', width: 'auto', height: 'auto', display: 'block' }}
+            />
           </motion.div>
         </div>
       )}

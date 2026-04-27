@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, Clock, FileText, Trash2, Edit, XCircle, CheckCircle, AlertCircle, Leaf } from 'lucide-react';
+import { ChevronLeft, FileText, Trash2, XCircle, CheckCircle, AlertCircle, Leaf, X } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { supabase } from '../../lib/supabase';
 import { WishCategory } from './types';
+import { WishDetailPanel } from './wish-detail-panel';
 
 interface UserSession {
   email: string;
@@ -20,8 +21,10 @@ interface WishItem {
   author: string;
   is_public: boolean;
   likes: number;
-  created_at: string;
+  created_at: number;
   reason_review_status?: 'pending' | 'approved' | 'rejected';
+  thanked_content?: string;
+  thanked_at?: string;
 }
 
 interface UserProfileProps {
@@ -53,13 +56,16 @@ const categoryColors: Record<WishCategory, string> = {
 export function UserProfile({ user, onBack }: UserProfileProps) {
   const [wishes, setWishes] = useState<WishItem[]>([]);
   const [selectedWish, setSelectedWish] = useState<WishItem | null>(null);
-  const [editReason, setEditReason] = useState('');
-  const [isPublic, setIsPublic] = useState(true);
+  const [detailWish, setDetailWish] = useState<any | null>(null); // 用于传递给 WishDetailPanel
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [lastId, setLastId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [tempReason, setTempReason] = useState('');
+  const [showThankModal, setShowThankModal] = useState(false);
+  const [tempThank, setTempThank] = useState('');
 
   const PAGE_SIZE = 10;
 
@@ -87,10 +93,15 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
       if (error) throw error;
 
       if (data) {
+        const transformedData = data.map((item) => ({
+          ...item,
+          created_at: new Date(item.created_at).getTime(),
+        }));
+
         if (isRefresh) {
-          setWishes(data);
+          setWishes(transformedData);
         } else {
-          setWishes((prev) => [...prev, ...data]);
+          setWishes((prev) => [...prev, ...transformedData]);
         }
 
         setHasMore(data.length === PAGE_SIZE);
@@ -166,48 +177,35 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
     }
   };
 
-  // 保存发念缘由修改
-  const handleSaveReason = async () => {
+  // 直接保存发念缘由（不走审核）
+  const handleSaveReasonDirect = async (reason: string) => {
     if (!selectedWish) return;
 
     setIsSubmitting(true);
     try {
-      // 记录修改日志
-      await supabase.from('edit_logs').insert({
-        wish_id: selectedWish.id,
-        user_email: user?.email || '',
-        action: 'update_reason',
-        old_content: JSON.stringify({ reason: selectedWish.reason }),
-        new_content: JSON.stringify({ reason: editReason }),
-        review_status: 'pending',
-      });
-
-      // 更新心愿，将待审核的内容存入 reason_pending
       const { error } = await supabase
         .from('wishes')
-        .update({
-          reason_pending: editReason,
-          reason_review_status: 'pending',
-        })
+        .update({ reason: reason.trim() || null })
         .eq('id', selectedWish.id);
 
       if (error) throw error;
 
+      const trimmed = reason.trim() || undefined;
       // 更新本地状态
       setWishes((prev) =>
         prev.map((w) =>
-          w.id === selectedWish.id
-            ? { ...w, reason_pending: editReason, reason_review_status: 'pending' as const }
-            : w
+          w.id === selectedWish.id ? { ...w, reason: trimmed } : w
         )
       );
       setSelectedWish((prev) =>
-        prev
-          ? { ...prev, reason_pending: editReason, reason_review_status: 'pending' as const }
-          : null
+        prev ? { ...prev, reason: trimmed } : null
+      );
+      // 同步更新 detailWish
+      setDetailWish((prev) =>
+        prev ? { ...prev, reason: trimmed } : null
       );
 
-      alert('修改已提交，等待审核后生效');
+      alert('保存成功');
     } catch (e: any) {
       alert('保存失败：' + e.message);
     } finally {
@@ -215,33 +213,40 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
     }
   };
 
-  // 更新心愿公开状态
-  const handleTogglePublic = async () => {
+  // 保存谢愿词
+  const handleSaveThank = async (content: string) => {
     if (!selectedWish) return;
 
     setIsSubmitting(true);
     try {
       const { error } = await supabase
         .from('wishes')
-        .update({ is_public: !selectedWish.is_public })
+        .update({
+          thanked_content: content,
+          thanked_at: new Date().toISOString(),
+        })
         .eq('id', selectedWish.id);
 
       if (error) throw error;
 
+      const now = new Date().toISOString();
       // 更新本地状态
       setWishes((prev) =>
         prev.map((w) =>
-          w.id === selectedWish.id
-            ? { ...w, is_public: !w.is_public }
-            : w
+          w.id === selectedWish.id ? { ...w, thanked_content: content, thanked_at: now } : w
         )
       );
       setSelectedWish((prev) =>
-        prev ? { ...prev, is_public: !prev.is_public } : null
+        prev ? { ...prev, thanked_content: content, thanked_at: now } : null
       );
-      setIsPublic(!isPublic);
+      // 同步更新 detailWish
+      setDetailWish((prev) =>
+        prev ? { ...prev, thankedContent: content, thankedAt: Date.now() } : null
+      );
+
+      alert('保存成功');
     } catch (e: any) {
-      alert('更新失败：' + e.message);
+      alert('保存失败：' + e.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -265,9 +270,19 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
       animate={{ opacity: 1, y: 0 }}
       className="cursor-pointer hover:bg-stone-50 transition-colors border-b border-stone-100 last:border-0"
       onClick={() => {
+        setDetailWish({
+          id: wish.id,
+          category: wish.category,
+          content: wish.content,
+          author: wish.author,
+          createdAt: wish.created_at,
+          likes: wish.likes,
+          isPublic: wish.is_public,
+          reason: wish.reason,
+          thankedContent: wish.thanked_content,
+          thankedAt: wish.thanked_at ? new Date(wish.thanked_at).getTime() : null,
+        });
         setSelectedWish(wish);
-        setEditReason(wish.reason || '');
-        setIsPublic(wish.is_public);
       }}
     >
       <td className="py-3 px-4 text-center">
@@ -326,9 +341,19 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
       animate={{ opacity: 1, y: 0 }}
       className="p-4 cursor-pointer hover:bg-stone-50 transition-colors"
       onClick={() => {
+        setDetailWish({
+          id: wish.id,
+          category: wish.category,
+          content: wish.content,
+          author: wish.author,
+          createdAt: wish.created_at,
+          likes: wish.likes,
+          isPublic: wish.is_public,
+          reason: wish.reason,
+          thankedContent: wish.thanked_content,
+          thankedAt: wish.thanked_at ? new Date(wish.thanked_at).getTime() : null,
+        });
         setSelectedWish(wish);
-        setEditReason(wish.reason || '');
-        setIsPublic(wish.is_public);
       }}
     >
       <div className="flex items-start justify-between gap-3 mb-2">
@@ -372,199 +397,159 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
     </motion.div>
   );
 
-  // 渲染心愿详情
+  // 渲染心愿详情（使用 WishDetailPanel + 管理弹窗）
   const renderDetail = () => {
-    if (!selectedWish) return null;
-
-    // 从 content 中分离出实际的心声内容（去除发念缘由部分）
-    const contentOnly = selectedWish.content.split('\n\n【发念缘由】')[0] || selectedWish.content;
+    if (!detailWish) return null;
 
     return (
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-          onClick={() => {
+      <>
+        <WishDetailPanel
+          wish={detailWish}
+          onClose={() => {
+            setDetailWish(null);
             setSelectedWish(null);
             setShowDeleteConfirm(false);
           }}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sticky top-0 flex items-center justify-between border-b border-stone-100 p-5 pb-4 bg-white rounded-t-2xl">
-              <div className="flex flex-col">
-                <h2 className="text-xl font-semibold text-stone-800 font-serif">
-                  心愿详情
-                </h2>
-                <span className="text-[9px] text-stone-400 leading-none">Wish Details #{selectedWish.short_id}</span>
-              </div>
-              <button
-                onClick={() => {
-                  setSelectedWish(null);
-                  setShowDeleteConfirm(false);
-                }}
-                className="rounded-full p-2 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
+          user={user}
+          isAdmin={true}
+          onDelete={() => setShowDeleteConfirm(true)}
+          onReasonEdit={() => {
+            if (selectedWish?.thanked_content) return;
+            setTempReason(selectedWish?.reason || '');
+            setShowReasonModal(true);
+          }}
+          reasonEditable={!selectedWish?.thanked_content}
+          thankedContent={detailWish.thankedContent}
+          thankedAt={detailWish.thankedAt}
+          onThankOpen={() => {
+            setTempThank('');
+            setShowThankModal(true);
+          }}
+        />
+
+        {/* 删除确认弹窗 */}
+        <AnimatePresence>
+          {showDeleteConfirm && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-xl p-6 w-80 shadow-2xl"
               >
-                <XCircle size={20} />
-              </button>
-            </div>
-
-            <div className="p-6">
-              {/* 基本信息 */}
-              <div className="mb-6 space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className={twMerge('px-2 py-0.5 rounded-full text-xs font-medium border', categoryColors[selectedWish.category])}>
-                    {categoryLabels[selectedWish.category]}
-                  </span>
-                  <span className="text-xs text-stone-500">#{selectedWish.short_id}</span>
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertCircle size={18} className="text-red-500" />
+                  <p className="text-sm font-medium text-stone-700">确定删除此心愿？此操作无法撤销。</p>
                 </div>
-
-                <div>
-                  <div className="flex flex-col gap-0.5 mb-1">
-                    <label className="text-sm font-medium text-stone-600">心声内容</label>
-                    <span className="text-[8px] text-stone-400 leading-none">Your Message</span>
-                  </div>
-                  <p className="text-stone-700 bg-stone-50 rounded-lg p-4 font-serif">{contentOnly}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="flex flex-col gap-0.5 mb-1">
-                      <label className="text-sm font-medium text-stone-600">署名</label>
-                      <span className="text-[8px] text-stone-400 leading-none">Author</span>
-                    </div>
-                    <p className="text-stone-700 bg-stone-50 rounded-lg p-3 font-serif">{selectedWish.author}</p>
-                  </div>
-                  <div>
-                    <div className="flex flex-col gap-0.5 mb-1">
-                      <label className="text-sm font-medium text-stone-600">日期</label>
-                      <span className="text-[8px] text-stone-400 leading-none">Date</span>
-                    </div>
-                    <p className="text-stone-700 bg-stone-50 rounded-lg p-3 font-serif">{formatDate(selectedWish.created_at)}</p>
-                  </div>
-                </div>
-
-                {/* 公开/保密开关 */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex flex-col gap-0.5">
-                      <label className="text-sm font-medium text-stone-600">是否公开</label>
-                      <span className="text-[8px] text-stone-400 leading-none">Public Visibility</span>
-                    </div>
-                    <p className="text-xs text-stone-400 mt-1">不公开将显示"保密" · Private shows "Private" on wish board</p>
-                  </div>
+                <div className="flex gap-2">
                   <button
-                    type="button"
-                    onClick={handleTogglePublic}
-                    disabled={isSubmitting}
-                    className={twMerge(
-                      'relative h-6 w-11 rounded-full transition-colors duration-200 disabled:opacity-50',
-                      selectedWish.is_public ? 'bg-amber-500' : 'bg-stone-300'
-                    )}
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 px-3 py-2 text-sm text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
                   >
-                    <span
-                      className={twMerge(
-                        'absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200',
-                        selectedWish.is_public ? 'left-6' : 'left-1'
-                      )}
-                    />
+                    取消
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isSubmitting}
+                    className="flex-1 px-3 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {isSubmitting ? '删除中...' : '确认删除'}
                   </button>
                 </div>
-              </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
-              {/* 发念缘由（可编辑） */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium text-stone-600">发念缘由</label>
-                    <span className="text-[8px] text-stone-400 leading-none">Reason Behind This Wish</span>
-                  </div>
-                  {selectedWish.reason_review_status === 'pending' && (
-                    <span className="text-xs text-amber-600 flex items-center gap-1">
-                      <AlertCircle size={12} /> 待审核 · Pending
-                    </span>
-                  )}
+        {/* 发愿缘由编辑弹窗 */}
+        <AnimatePresence>
+          {showReasonModal && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-xl p-6 w-[90%] max-w-lg shadow-2xl"
+                style={{ resize: 'both', overflow: 'auto', minWidth: 320, minHeight: 200 }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-stone-700">编辑发念缘由</h3>
+                  <button
+                    onClick={() => setShowReasonModal(false)}
+                    className="rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
                 <textarea
-                  value={editReason}
-                  onChange={(e) => setEditReason(e.target.value)}
-                  placeholder="分享你写下这个心愿的故事或原因... · Share the story or reason behind this wish..."
-                  rows={6}
+                  value={tempReason}
+                  onChange={(e) => setTempReason(e.target.value)}
+                  placeholder="分享你写下这个心愿的故事或原因..."
+                  rows={8}
                   maxLength={800}
-                  className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 p-4 text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-400/10 font-serif"
+                  className="w-full resize-none rounded-lg border border-stone-200 bg-stone-50 p-2 text-sm text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none font-serif"
                 />
-                <div className="text-right text-xs text-stone-400 mt-1">{editReason.length}/800</div>
-
-                {selectedWish.reason !== editReason && (
-                  <div className="mt-3 flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditReason(selectedWish.reason || '')}
-                      className="px-4 py-2 text-sm font-medium text-stone-500 hover:bg-stone-100 rounded-lg"
-                    >
-                      取消 · Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveReason}
-                      disabled={isSubmitting}
-                      className="px-4 py-2 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 disabled:opacity-50"
-                    >
-                      {isSubmitting ? '提交审核中... · Submitting' : '提交修改 · Submit'}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* 删除按钮 */}
-              <div className="border-t border-stone-100 pt-4">
-                {!showDeleteConfirm ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    disabled={isSubmitting}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 size={16} />
-                    删除此心愿 · Delete
-                  </button>
-                ) : (
-                  <div className="flex items-center justify-between gap-2 bg-red-50 p-3 rounded-lg">
-                    <div>
-                      <span className="text-sm text-red-700 block">确定要删除此心愿吗？</span>
-                      <span className="text-xs text-red-600 block mt-0.5">This action cannot be undone.</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowDeleteConfirm(false)}
-                        className="px-3 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-100 rounded-lg"
-                      >
-                        取消 · Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleDelete}
-                        disabled={isSubmitting}
-                        className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
-                      >
-                        {isSubmitting ? '删除中... · Deleting' : '确认删除 · Delete'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+                <div className="text-right text-xs text-stone-400 mt-1">{tempReason.length}/800</div>
+                <button
+                  onClick={() => {
+                    handleSaveReasonDirect(tempReason);
+                    setShowReasonModal(false);
+                  }}
+                  disabled={isSubmitting || !tempReason.trim()}
+                  className="w-full mt-3 px-4 py-2 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                >
+                  保存
+                </button>
+              </motion.div>
             </div>
-          </motion.div>
-        </motion.div>
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+
+        {/* 谢愿词编辑弹窗 */}
+        <AnimatePresence>
+          {showThankModal && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-xl p-6 w-[90%] max-w-lg shadow-2xl"
+                style={{ resize: 'both', overflow: 'auto', minWidth: 320, minHeight: 200 }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-stone-700">还愿谢语</h3>
+                  <button
+                    onClick={() => setShowThankModal(false)}
+                    className="rounded-full p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <textarea
+                  value={tempThank}
+                  onChange={(e) => setTempThank(e.target.value.slice(0, 1000))}
+                  placeholder="请输入还愿谢语"
+                  rows={8}
+                  maxLength={1000}
+                  className="w-full resize-none rounded-lg border border-stone-200 bg-stone-50 p-2 text-sm text-stone-700 placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:outline-none font-serif"
+                />
+                <div className="text-right text-xs text-stone-400 mt-1">{tempThank.length}/1000</div>
+                <p className="text-[10px] text-amber-600 mt-1">保存后本愿不可再次编辑</p>
+                <button
+                  onClick={() => {
+                    handleSaveThank(tempThank);
+                    setShowThankModal(false);
+                  }}
+                  disabled={isSubmitting || !tempThank.trim()}
+                  className="w-full mt-3 px-4 py-2 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                >
+                  保存
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </>
     );
   };
 

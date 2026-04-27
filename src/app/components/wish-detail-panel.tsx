@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Send } from 'lucide-react';
+import { X, Send, Trash2, Edit, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -16,6 +16,13 @@ interface WishDetailPanelProps {
   wish: Wish | null;
   onClose: () => void;
   user: { email: string; loggedAt: string; expiresAt: string } | null;
+  isAdmin?: boolean;
+  onDelete?: () => void;
+  onReasonEdit?: () => void;
+  reasonEditable?: boolean;
+  thankedContent?: string | null;
+  thankedAt?: number | null;
+  onThankOpen?: () => void;
 }
 
 interface CommentItemProps {
@@ -97,7 +104,7 @@ const CommentItem = ({ comment, depth, replyToId, replyContent, onReply, onReply
   );
 };
 
-export const WishDetailPanel = ({ wish, onClose, user }: WishDetailPanelProps) => {
+export const WishDetailPanel = ({ wish, onClose, user, isAdmin, onDelete, onReasonEdit, reasonEditable, thankedContent, thankedAt, onThankOpen }: WishDetailPanelProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newContent, setNewContent] = useState('');
   const [replyToId, setReplyToId] = useState<string | null>(null);
@@ -256,9 +263,20 @@ export const WishDetailPanel = ({ wish, onClose, user }: WishDetailPanelProps) =
           <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
             {/* 心愿详情 */}
             <div className="mb-4 flex flex-col gap-3">
-              <span className={twMerge('self-start rounded-full px-3 py-0.5 text-[10px] font-medium', cat.classes)}>
-                {cat.zh} · {cat.en}
-              </span>
+              <div className="flex items-center justify-between">
+                <span className={twMerge('rounded-full px-3 py-0.5 text-[10px] font-medium', cat.classes)}>
+                  {cat.zh} · {cat.en}
+                </span>
+                {isAdmin && onDelete && (
+                  <button
+                    onClick={onDelete}
+                    className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 size={12} />
+                    删除
+                  </button>
+                )}
+              </div>
               <div className="rounded-lg bg-stone-50 p-4 border border-stone-100">
                 <p className="text-sm text-stone-700 leading-relaxed font-serif whitespace-pre-wrap">
                   {wish.content}
@@ -266,12 +284,63 @@ export const WishDetailPanel = ({ wish, onClose, user }: WishDetailPanelProps) =
                 {wish.reason && (
                   <>
                     <div className="my-3 border-t border-stone-200/50" />
-                    <div className="mt-3">
-                      <p className="text-sm text-stone-600 leading-relaxed font-serif whitespace-pre-wrap">
+                    <div className="mt-3 flex items-start justify-between gap-2">
+                      <p className="text-sm text-stone-600 leading-relaxed font-serif whitespace-pre-wrap flex-1">
                         {wish.reason}
                       </p>
+                      {reasonEditable && (
+                        <button
+                          onClick={onReasonEdit}
+                          className="flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] text-stone-400 hover:bg-stone-200 hover:text-stone-600 transition-colors"
+                        >
+                          <Edit size={10} />
+                          编辑
+                        </button>
+                      )}
                     </div>
                   </>
+                )}
+                {!wish.reason && reasonEditable && (
+                  <div className="mt-3 pt-3 border-t border-stone-200/50">
+                    <button
+                      onClick={onReasonEdit}
+                      className="flex items-center gap-1.5 rounded-lg border border-dashed border-stone-300 px-3 py-2 text-xs text-stone-400 hover:border-amber-400 hover:text-amber-600 transition-colors"
+                    >
+                      <Edit size={12} />
+                      添加发愿缘由 · Add Reason
+                    </button>
+                  </div>
+                )}
+
+                {/* 谢愿词模块 */}
+                {isAdmin && (
+                  <div className="mt-3 pt-3 border-t border-stone-200/50">
+                    {thankedContent ? (
+                      <div>
+                        <div className="flex items-center gap-1 text-xs text-green-600 mb-2">
+                          <CheckCircle size={12} /> 已还愿
+                          <span className="text-[10px] text-stone-400 ml-1">· Fulfilled</span>
+                        </div>
+                        <div className="rounded-lg bg-green-50/50 p-3 border border-green-100">
+                          <p className="text-xs text-stone-600 leading-relaxed font-serif whitespace-pre-wrap">
+                            {thankedContent}
+                          </p>
+                          {thankedAt && (
+                            <p className="text-[10px] text-stone-400 mt-1">
+                              {new Date(thankedAt).toLocaleDateString('zh-CN', { year: 'numeric', month: 'numeric', day: 'numeric' })} 还愿
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={onThankOpen}
+                        className="text-xs text-amber-600 hover:text-amber-700 transition-colors"
+                      >
+                        去还原 · Fulfill
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
               <div className="flex items-center justify-between text-xs text-stone-400">
