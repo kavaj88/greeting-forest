@@ -8,6 +8,7 @@ import { WishDetailPanel } from './components/wish-detail-panel';
 import { CreateWishModal } from './components/CreateWishModal';
 import { AuthModal } from './components/AuthModal';
 import { UserProfile } from './components/UserProfile';
+import { HomeLanding } from './components/HomeLanding';
 import { fetchWishes, createWish as apiCreateWish, likeWish as apiLikeWish } from '../lib/api';
 
 interface UserSession {
@@ -24,9 +25,40 @@ const TABS: { id: WishCategory; label: string; labelEn: string; icon: React.Reac
 ];
 
 const PAGE_SIZE = 72;
+type AppView = 'home' | 'wall';
+
+function parseSeoPhrases(content: string) {
+  return Array.from(
+    new Set(
+      content
+        .split(/[，,。；;、\r\n\t]+/)
+        .map((item) => item.trim())
+        .filter((item) => item.length >= 2)
+    )
+  );
+}
+
+function upsertMeta(name: string, content: string, property = false) {
+  const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+  let element = document.head.querySelector(selector) as HTMLMetaElement | null;
+
+  if (!element) {
+    element = document.createElement('meta');
+    if (property) {
+      element.setAttribute('property', name);
+    } else {
+      element.setAttribute('name', name);
+    }
+    document.head.appendChild(element);
+  }
+
+  element.setAttribute('content', content);
+}
 
 export default function App() {
+  const [currentView, setCurrentView] = useState<AppView>('home');
   const [wishes, setWishes] = useState<Wish[]>([]);
+  const [seoPhrases, setSeoPhrases] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<WishCategory>('all');
   const [pagePerTab, setPagePerTab] = useState<Record<WishCategory, number>>({
     all: 1,
@@ -77,6 +109,52 @@ export default function App() {
   useEffect(() => {
     loadWishes();
   }, []);
+
+  useEffect(() => {
+    fetch('/seo.txt')
+      .then((response) => response.text())
+      .then((text) => setSeoPhrases(parseSeoPhrases(text)))
+      .catch(() => setSeoPhrases([]));
+  }, []);
+
+  useEffect(() => {
+    if (currentView === 'home') {
+      document.title = '如是愿首页 | 在线祈福许愿墙、树洞倾诉、祝福留言与还愿入口';
+      upsertMeta(
+        'description',
+        '如是愿首页提供在线祈福、许愿墙、树洞倾诉、祝福留言与还愿入口，适配百度、谷歌、头条、微信搜一搜、必应与360搜索，兼顾移动端与PC端收录。'
+      );
+      upsertMeta(
+        'keywords',
+        '如是愿,如是愿首页,在线祈福,许愿墙,树洞倾诉,网上祈祷,线上祝福,还愿,祝福留言,心愿记录,平安喜乐'
+      );
+      upsertMeta('og:title', '如是愿首页 | 在线祈福许愿墙与树洞倾诉入口', true);
+      upsertMeta(
+        'og:description',
+        '默认进入如是愿首页，浏览在线祈福、许愿墙、树洞倾诉、还愿谢语与祝福留言等内容入口。',
+        true
+      );
+      upsertMeta('og:image', `${window.location.origin}/fo.jpg`, true);
+      return;
+    }
+
+    document.title = '如是愿 | 在线祈福许愿墙 - 许下心愿、倾诉树洞、线上祈祷';
+    upsertMeta(
+      'description',
+      '如是愿（WISHING YOU）是一个提供在线祈福、许愿墙、树洞倾诉与还愿的线上平台。你可以发布关于爱情、事业、学业的美好祝愿，也可以匿名吐槽褪去烦恼。'
+    );
+    upsertMeta(
+      'keywords',
+      '如是愿,许愿,祈祷,祝福,许愿墙,在线祈福,网上祈祷,线上祝福,树洞倾诉,还愿'
+    );
+    upsertMeta('og:title', '如是愿 | 在线祈福许愿墙 - 凡所祈愿，如是圆满', true);
+    upsertMeta(
+      'og:description',
+      '浏览公开心愿、发布祈福内容、参与祝福留言与树洞倾诉，体验如是愿的线上心愿墙。',
+      true
+    );
+    upsertMeta('og:image', `${window.location.origin}/bg.jpg`, true);
+  }, [currentView]);
 
   const loadWishes = async () => {
     setIsLoading(true);
@@ -217,6 +295,39 @@ export default function App() {
     setIsSearching(false);
   }, []);
 
+  if (currentView === 'home') {
+    return (
+      <div className="min-h-screen">
+        <HomeLanding
+          seoPhrases={seoPhrases}
+          isLoggedIn={!!userSession}
+          onEnterWall={() => setCurrentView('wall')}
+          onCreateWish={handleOpenWishModal}
+        />
+
+        <CreateWishModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleAddWish}
+          user={userSession}
+        />
+
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          mode={authMode}
+          onClose={() => setIsAuthModalOpen(false)}
+          onAuthSuccess={handleAuthSuccess}
+        />
+
+        {showUserProfile && userSession && (
+          <div className="fixed inset-0 z-50 overflow-auto bg-white">
+            <UserProfile user={userSession} onBack={handleCloseUserProfile} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen text-stone-800 selection:bg-amber-200 relative">
       {/* Background Image */}
@@ -229,7 +340,12 @@ export default function App() {
       <header className="sticky top-0 z-[10] border-b border-stone-200/50 bg-white/60 backdrop-blur-md">
         <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
           <div className="flex h-10 items-center justify-between gap-4">
-            <div className="flex items-center gap-2 lg:gap-3">
+            <button
+              type="button"
+              onClick={() => setCurrentView('home')}
+              className="flex items-center gap-2 lg:gap-3"
+              aria-label="返回如是愿首页"
+            >
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-white shadow-inner">
                 <Leaf size={16} />
               </div>
@@ -247,7 +363,7 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            </div>
+            </button>
 
             <div className="flex items-center gap-1 lg:gap-2">
               {/* 搜索框 */}
