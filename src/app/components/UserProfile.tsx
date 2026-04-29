@@ -53,10 +53,25 @@ const categoryColors: Record<WishCategory, string> = {
   vent: 'bg-slate-50 text-slate-700 border-slate-200',
 };
 
+// 用于 WishDetailPanel 的数据类型（兼容 Wish 接口 + 谢愿字段）
+interface DetailWish {
+  id: string;
+  category: string;
+  content: string;
+  author: string;
+  createdAt: number;
+  likes: number;
+  bgVariant: number;
+  isPublic: boolean;
+  reason?: string;
+  thankedContent?: string | null;
+  thankedAt?: number | null;
+}
+
 export function UserProfile({ user, onBack }: UserProfileProps) {
   const [wishes, setWishes] = useState<WishItem[]>([]);
   const [selectedWish, setSelectedWish] = useState<WishItem | null>(null);
-  const [detailWish, setDetailWish] = useState<any | null>(null); // 用于传递给 WishDetailPanel
+  const [detailWish, setDetailWish] = useState<DetailWish | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -93,6 +108,9 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
       if (error) throw error;
 
       if (data) {
+        // 保存原始 created_at 字符串（ISO格式），用于 Supabase 分页查询
+        const rawLastCreatedAt = data.length > 0 ? data[data.length - 1].created_at : null;
+
         const transformedData = data.map((item) => ({
           ...item,
           created_at: new Date(item.created_at).getTime(),
@@ -105,8 +123,8 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
         }
 
         setHasMore(data.length === PAGE_SIZE);
-        if (data.length > 0) {
-          setLastId(data[data.length - 1].created_at);
+        if (rawLastCreatedAt) {
+          setLastId(rawLastCreatedAt);
         }
       }
     } catch (e: any) {
@@ -261,6 +279,21 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
     });
   };
 
+  // 将 WishItem 转换为 DetailWish（消除 renderWishItem/renderWishItemMobile 重复代码）
+  const toDetailWish = (wish: WishItem): DetailWish => ({
+    id: wish.id,
+    category: wish.category,
+    content: wish.content,
+    author: wish.author,
+    createdAt: wish.created_at,
+    likes: wish.likes,
+    bgVariant: 0,
+    isPublic: wish.is_public,
+    reason: wish.reason,
+    thankedContent: wish.thanked_content,
+    thankedAt: wish.thanked_at ? new Date(wish.thanked_at).getTime() : null,
+  });
+
   // 渲染心愿列表项（桌面端表格）
   const renderWishItem = (wish: WishItem) => (
     <motion.tr
@@ -270,18 +303,7 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
       animate={{ opacity: 1, y: 0 }}
       className="cursor-pointer hover:bg-stone-50 transition-colors border-b border-stone-100 last:border-0"
       onClick={() => {
-        setDetailWish({
-          id: wish.id,
-          category: wish.category,
-          content: wish.content,
-          author: wish.author,
-          createdAt: wish.created_at,
-          likes: wish.likes,
-          isPublic: wish.is_public,
-          reason: wish.reason,
-          thankedContent: wish.thanked_content,
-          thankedAt: wish.thanked_at ? new Date(wish.thanked_at).getTime() : null,
-        });
+        setDetailWish(toDetailWish(wish));
         setSelectedWish(wish);
       }}
     >
@@ -341,18 +363,7 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
       animate={{ opacity: 1, y: 0 }}
       className="p-4 cursor-pointer hover:bg-stone-50 transition-colors"
       onClick={() => {
-        setDetailWish({
-          id: wish.id,
-          category: wish.category,
-          content: wish.content,
-          author: wish.author,
-          createdAt: wish.created_at,
-          likes: wish.likes,
-          isPublic: wish.is_public,
-          reason: wish.reason,
-          thankedContent: wish.thanked_content,
-          thankedAt: wish.thanked_at ? new Date(wish.thanked_at).getTime() : null,
-        });
+        setDetailWish(toDetailWish(wish));
         setSelectedWish(wish);
       }}
     >
@@ -418,7 +429,7 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
             setTempReason(selectedWish?.reason || '');
             setShowReasonModal(true);
           }}
-          reasonEditable={!selectedWish?.thanked_content}
+          reasonEditable={!detailWish?.thankedContent}
           thankedContent={detailWish.thankedContent}
           thankedAt={detailWish.thankedAt}
           onThankOpen={() => {
@@ -483,7 +494,7 @@ export function UserProfile({ user, onBack }: UserProfileProps) {
                 </div>
                 <textarea
                   value={tempReason}
-                  onChange={(e) => setTempReason(e.target.value)}
+                  onChange={(e) => setTempReason(e.target.value.slice(0, 800))}
                   placeholder="分享你写下这个心愿的故事或原因..."
                   rows={8}
                   maxLength={800}

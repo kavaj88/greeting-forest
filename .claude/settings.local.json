@@ -25,7 +25,9 @@
       "Bash(~/.claude/skills/gstack/browse/dist/browse goto:*)",
       "Bash(~/.claude/skills/gstack/browse/dist/browse snapshot:*)",
       "Bash(~/.claude/skills/gstack/browse/dist/browse screenshot:*)",
-      "Bash(~/.claude/skills/gstack/browse/dist/browse fill \"@e402\" \"Test comment\" 2>&1 && ~/.claude/skills/gstack/browse/dist/browse click \"@e403\" 2>&1)"
+      "Bash(~/.claude/skills/gstack/browse/dist/browse fill \"@e402\" \"Test comment\" 2>&1 && ~/.claude/skills/gstack/browse/dist/browse click \"@e403\" 2>&1)",
+      "Bash(cd:*)",
+      "Bash(cd /d/codes/openclaw/greeting-forest && pnpm build 2>&1)"
     ]
   }
 }

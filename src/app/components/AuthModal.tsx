@@ -41,10 +41,12 @@ export function AuthModal({ isOpen, mode, onClose, onAuthSuccess }: AuthModalPro
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  // 简单哈希（生产环境应该用更好的加密）
-  const hashPassword = (pwd: string) => {
-    // 简单实现：实际应该用 bcrypt 或 argon2
-    return btoa(pwd + '_salting_wood');
+  // 密码哈希（SHA-256 + 盐值）
+  const hashPassword = async (pwd: string) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(pwd + '_gf_salt_2024');
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
   };
 
   // 发送验证码（用于注册/重置密码）
@@ -115,7 +117,7 @@ export function AuthModal({ isOpen, mode, onClose, onAuthSuccess }: AuthModalPro
       if (verifyError) throw verifyError;
 
       // 第二步：将用户信息保存到业务表（包含密码）
-      const hashedPassword = hashPassword(password);
+      const hashedPassword = await hashPassword(password);
       const { error: upsertError } = await supabase
         .from('users')
         .upsert({
@@ -177,7 +179,7 @@ export function AuthModal({ isOpen, mode, onClose, onAuthSuccess }: AuthModalPro
       }
 
       // 验证密码
-      const hashedInput = hashPassword(password);
+      const hashedInput = await hashPassword(password);
       if (userData.password_hash !== hashedInput) {
         setError('密码错误');
         return;
@@ -211,7 +213,7 @@ export function AuthModal({ isOpen, mode, onClose, onAuthSuccess }: AuthModalPro
   };
 
   // 设置用户 session（自定义）
-  const setUserSession = (sessionData: any) => {
+  const setUserSession = (sessionData: { email: string; loggedAt: string; expiresAt: string }) => {
     window.dispatchEvent(new CustomEvent('auth-change', { detail: sessionData }));
   };
 
@@ -427,7 +429,7 @@ export function AuthModal({ isOpen, mode, onClose, onAuthSuccess }: AuthModalPro
             </button>
             <img
               src="/manager.jpg"
-              alt="注册帮助"
+              alt="如是愿注册帮助 - 微信扫码获取邀请码，完成在线祈福与许愿"
               className="rounded-xl shadow-2xl"
               style={{ maxHeight: '85vh', maxWidth: '90vw', width: 'auto', height: 'auto', display: 'block' }}
             />

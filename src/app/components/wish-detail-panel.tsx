@@ -121,6 +121,9 @@ export const WishDetailPanel = ({ wish, onClose, user, isAdmin, onDelete, onReas
         setComments(res.data);
       }
       setIsCommentsLoading(false);
+    }).catch((e) => {
+      console.error('Failed to fetch comments:', e);
+      setIsCommentsLoading(false);
     });
   }, [wish]);
 
@@ -337,7 +340,7 @@ export const WishDetailPanel = ({ wish, onClose, user, isAdmin, onDelete, onReas
                         onClick={onThankOpen}
                         className="text-xs text-amber-600 hover:text-amber-700 transition-colors"
                       >
-                        去还原 · Fulfill
+                        去还愿 · Fulfill
                       </button>
                     )}
                   </div>

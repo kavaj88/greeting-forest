@@ -235,7 +235,8 @@ export default function App() {
               </div>
               <div className="flex flex-col md:flex-row md:items-center md:gap-3">
                 <div>
-                  <h1 className="text-sm font-bold tracking-tight text-stone-800 font-serif whitespace-nowrap">如是愿</h1>
+                  <h1 className="sr-only">如是愿 - 祈福、许愿墙与树洞倾诉平台，凡所祈愿如是圆满</h1>
+                  <div className="text-sm font-bold tracking-tight text-stone-800 font-serif whitespace-nowrap">如是愿</div>
                   <p className="text-[9px] uppercase tracking-widest text-stone-400 whitespace-nowrap">WISHING YOU</p>
                 </div>
                 <div className="hidden h-5 w-px bg-stone-200 lg:block"></div>
@@ -306,6 +307,7 @@ export default function App() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
+                    aria-label={`切换到${tab.label}分类`}
                     className={twMerge(
                       'relative flex flex-col items-center gap-0 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-200',
                       activeTab === tab.id
@@ -331,6 +333,7 @@ export default function App() {
 
               <button
                 onClick={handleOpenWishModal}
+                aria-label="发布新心愿或祈福"
                 className="flex flex-col items-center gap-0 rounded-full bg-amber-500 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-amber-500/20 transition-transform hover:scale-105 hover:bg-amber-600"
               >
                 <span className="flex items-center gap-1">
@@ -368,7 +371,12 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 py-8">
+      <main className="relative z-10 mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 py-8" role="main" aria-label="许愿墙主要内容区">
+        {/* SEO隐藏段落，增加长尾词密度 */}
+        <div className="sr-only">
+          <h2>最新祈福与许愿列表</h2>
+          <p>在这里，您可以浏览大家关于爱情、事业、学业、健康的美好祈祷和祝愿，也可以查看匿名树洞吐槽。在线许愿池，点亮梦想，褪去烦恼。</p>
+        </div>
         <div className="mx-auto pb-24 flex flex-wrap justify-center gap-2 sm:gap-3 max-w-[1920px]">
           {isLoading ? (
             <div className="w-full text-center py-20">

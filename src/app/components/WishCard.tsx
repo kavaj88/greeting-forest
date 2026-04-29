@@ -46,7 +46,7 @@ export const WishCard = memo(({ wish, onLike, onClick }: WishCardProps) => {
   const displayContent = wish.isPublic ? wish.content.split('\n\n【发念缘由】')[0] : '保密 · Private';
 
   return (
-    <motion.div
+    <motion.article
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -61,6 +61,7 @@ export const WishCard = memo(({ wish, onLike, onClick }: WishCardProps) => {
       style={{
         boxShadow: `0 0 20px -5px ${config.glowColor}, inset 0 0 20px -15px ${config.glowColor}`,
       }}
+      aria-label={`由 ${wish.author || '匿名'} 发布的${config.label}内容`}
     >
       {/* Glow effect */}
       <div
@@ -98,6 +99,7 @@ export const WishCard = memo(({ wish, onLike, onClick }: WishCardProps) => {
       </div>
 
       <div className="flex-1 flex flex-col justify-center overflow-hidden z-10 py-0.5">
+        <h3 className="sr-only">{`${config.label} - ${wish.author || '匿名'}的心愿`}</h3>
         <p className="w-full text-left whitespace-pre-wrap text-[12px] leading-relaxed text-stone-700 font-serif"
            style={{ display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' }}>
           {displayContent}
@@ -106,8 +108,10 @@ export const WishCard = memo(({ wish, onLike, onClick }: WishCardProps) => {
 
       <div className="mt-1.5 flex items-center justify-between border-t border-stone-200/50 pt-1.5 z-10">
         <span className="text-xs font-medium text-stone-600 truncate max-w-[60%]">— {wish.author || '匿名'}</span>
-        <span className="text-[10px] text-stone-400 shrink-0">{dateStr}</span>
+        <span className="text-[10px] text-stone-400 shrink-0">
+          <time dateTime={new Date(wish.createdAt).toISOString()}>{dateStr}</time>
+        </span>
       </div>
-    </motion.div>
+    </motion.article>
   );
 });
